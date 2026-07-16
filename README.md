@@ -1,4 +1,4 @@
-﻿# Gevshot
+﻿# GEVSHOT
 
 Outil de capture d'écran annotée pour documenter des logiciels, écrit en Rust.
 
