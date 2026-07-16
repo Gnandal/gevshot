@@ -1,7 +1,7 @@
-﻿use eframe::egui::{self, Color32};
+use eframe::egui::{self, Color32};
 
-use crate::config::Settings;
-use crate::{theme, widgets};
+use crate::infra::config::Settings;
+use crate::ui::{theme, widgets};
 
 pub struct SettingsDraft {
     pub settings: Settings,
@@ -130,7 +130,7 @@ fn save(ui: &mut egui::Ui, s: &mut Settings) {
     let current = s
         .save_dir
         .clone()
-        .unwrap_or_else(crate::export::default_save_dir);
+        .unwrap_or_else(crate::infra::export::default_save_dir);
     ui.horizontal(|ui| {
         egui::Frame::default()
             .fill(Color32::WHITE)
@@ -141,9 +141,10 @@ fn save(ui: &mut egui::Ui, s: &mut Settings) {
                 ui.monospace(current.display().to_string());
             });
         if ui.button("Parcourir…").clicked()
-            && let Some(dir) = rfd::FileDialog::new().set_directory(&current).pick_folder() {
-                s.save_dir = Some(dir);
-            }
+            && let Some(dir) = rfd::FileDialog::new().set_directory(&current).pick_folder()
+        {
+            s.save_dir = Some(dir);
+        }
     });
     if s.save_dir.is_some() {
         ui.add_space(4.0);

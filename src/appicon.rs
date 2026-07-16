@@ -1,4 +1,4 @@
-// Icône de l'application, dessinée par code (aucun fichier d'asset).
+﻿// Icône de l'application, dessinée par code (aucun fichier d'asset).
 // Ce module est volontairement autonome (tiny-skia uniquement) : il est
 // aussi inclus par build.rs pour générer le .ico embarqué dans l'exe —
 // d'où des commentaires « // » (les « //! » seraient invalides une fois

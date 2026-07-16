@@ -10,7 +10,7 @@ use base64::engine::general_purpose::STANDARD as BASE64;
 use eframe::egui::{Color32, Rect, pos2, vec2};
 use serde_json::json;
 
-use crate::annotation::{Annotation, FontChoice, Shape};
+use crate::domain::annotation::{Annotation, FontChoice, Shape};
 
 const API_URL: &str = "https://api.anthropic.com/v1/messages";
 const API_VERSION: &str = "2023-06-01";

@@ -23,10 +23,32 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
+      - name: Version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          "value=$v" >> $env:GITHUB_OUTPUT
+
       - name: Build release
         run: cargo build --release
 
-      - name: Package
+      - name: Install WiX
+        # WiX 5 : même schéma v4+ que installer/gevshot.wxs, sans étape
+        # d'acceptation de licence supplémentaire en CI.
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $ico = (Get-ChildItem "target\release\build\gevshot-*\out\gevshot.ico" | Select-Object -First 1).FullName
+          wix build installer\gevshot.wxs -arch x64 `
+            -d "Version=${{ steps.version.outputs.value }}" `
+            -d "ExePath=target\release\gevshot.exe" `
+            -d "IcoPath=$ico" `
+            -o "GEVSHOT-${{ steps.version.outputs.value }}-x64.msi"
+
+      - name: Package portable exe
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}"
@@ -35,5 +57,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: gevshot-*-windows-x64.zip
+          name: GEVSHOT ${{ github.ref_name }}
           generate_release_notes: true
+          files: |
+            GEVSHOT-*-x64.msi
+            gevshot-*-windows-x64.zip

@@ -70,7 +70,7 @@ impl FontChoice {
 
     /// Famille egui correspondante (enregistrée par `fonts::install`).
     pub fn family(&self, bold: bool) -> egui::FontFamily {
-        egui::FontFamily::Name(crate::fonts::family_name(*self, bold).into())
+        egui::FontFamily::Name(crate::infra::fonts::family_name(*self, bold).into())
     }
 }
 

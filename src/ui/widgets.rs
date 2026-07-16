@@ -2,7 +2,7 @@
     self, Align2, Color32, FontId, Painter, Pos2, Rect, Response, Sense, Stroke, Ui, vec2,
 };
 
-use crate::theme;
+use crate::ui::theme;
 
 /// Bouton d'outil : icône peinte au trait, fond bleu clair arrondi si actif.
 pub fn icon_button(

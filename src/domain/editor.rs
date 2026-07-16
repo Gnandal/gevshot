@@ -1,7 +1,7 @@
-﻿use eframe::egui::{self, Color32, CursorIcon, Pos2, Rect, Stroke, Vec2};
+use eframe::egui::{self, Color32, CursorIcon, Pos2, Rect, Stroke, Vec2};
 
-use crate::annotation::{Annotation, CanvasTransform, FontChoice, Shape};
-use crate::{theme, widgets};
+use crate::domain::annotation::{Annotation, CanvasTransform, FontChoice, Shape};
+use crate::ui::{theme, widgets};
 
 /// Tolérance de sélection en pixels écran.
 const HIT_TOLERANCE: f32 = 6.0;
@@ -336,23 +336,25 @@ impl Editor {
         }
 
         // Applique le style à l'annotation texte sélectionnée.
-        if changed && selected_text
-            && let Some(idx) = self.selected {
-                // Un seul cran d'undo par « rafale » de changements : on
-                // n'empile pas pendant un glissement continu du DragValue.
-                if !size_resp.dragged() || size_resp.drag_started() {
-                    self.push_undo();
-                }
-                if let Some(ann) = self.annotations.get_mut(idx)
-                    && let Shape::Text {
-                        size, font, bold, ..
-                    } = &mut ann.shape
-                    {
-                        *size = self.text_size;
-                        *font = self.text_font;
-                        *bold = self.text_bold;
-                    }
+        if changed
+            && selected_text
+            && let Some(idx) = self.selected
+        {
+            // Un seul cran d'undo par « rafale » de changements : on
+            // n'empile pas pendant un glissement continu du DragValue.
+            if !size_resp.dragged() || size_resp.drag_started() {
+                self.push_undo();
             }
+            if let Some(ann) = self.annotations.get_mut(idx)
+                && let Shape::Text {
+                    size, font, bold, ..
+                } = &mut ann.shape
+            {
+                *size = self.text_size;
+                *font = self.text_font;
+                *bold = self.text_bold;
+            }
+        }
     }
 
     // ----- Légende -------------------------------------------------------------
@@ -454,9 +456,10 @@ impl Editor {
         self.push_undo();
         for ann in &mut self.annotations {
             if let Shape::Badge { number, label, .. } = &mut ann.shape
-                && let Some((_, text)) = labels.iter().find(|(n, _)| n == number) {
-                    *label = text.clone();
-                }
+                && let Some((_, text)) = labels.iter().find(|(n, _)| n == number)
+            {
+                *label = text.clone();
+            }
         }
     }
 
@@ -488,8 +491,8 @@ impl Editor {
     }
 
     /// Style courant, appliqué aux annotations générées par l'IA.
-    pub fn ai_style(&self) -> crate::ai::AiStyle {
-        crate::ai::AiStyle {
+    pub fn ai_style(&self) -> crate::infra::ai::AiStyle {
+        crate::infra::ai::AiStyle {
             color: self.color,
             stroke_width: self.stroke_width,
             text_size: self.text_size,
@@ -597,91 +600,98 @@ impl Editor {
             .map(|p| clamp(t.to_image(p)));
 
         if response.clicked()
-            && let Some(p) = pointer {
-                match self.tool {
-                    Tool::Badge => self.place_badge(p),
-                    Tool::Select => {
-                        self.selected = self.hit_test(p, t.scale);
-                        self.sync_text_style_from_selection();
-                    }
-                    Tool::Text => {
-                        // Cliquer un texte existant le rouvre, sinon on en crée un.
-                        match self.hit_test(p, t.scale) {
-                            Some(idx)
-                                if matches!(self.annotations[idx].shape, Shape::Text { .. }) =>
-                            {
-                                self.selected = Some(idx);
-                                self.start_text_edit_existing(idx);
-                            }
-                            _ => self.start_text(p),
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-        if response.double_clicked() && self.tool == Tool::Select
             && let Some(p) = pointer
-                && let Some(idx) = self.hit_test(p, t.scale) {
-                    match self.annotations[idx].shape {
-                        Shape::Text { .. } => {
+        {
+            match self.tool {
+                Tool::Badge => self.place_badge(p),
+                Tool::Select => {
+                    self.selected = self.hit_test(p, t.scale);
+                    self.sync_text_style_from_selection();
+                }
+                Tool::Text => {
+                    // Cliquer un texte existant le rouvre, sinon on en crée un.
+                    match self.hit_test(p, t.scale) {
+                        Some(idx) if matches!(self.annotations[idx].shape, Shape::Text { .. }) => {
                             self.selected = Some(idx);
                             self.start_text_edit_existing(idx);
                         }
-                        Shape::Badge { .. } => {
-                            self.selected = Some(idx);
-                            self.start_badge_number_edit(idx);
-                        }
-                        _ => {}
+                        _ => self.start_text(p),
                     }
                 }
+                _ => {}
+            }
+        }
+
+        if response.double_clicked()
+            && self.tool == Tool::Select
+            && let Some(p) = pointer
+            && let Some(idx) = self.hit_test(p, t.scale)
+        {
+            match self.annotations[idx].shape {
+                Shape::Text { .. } => {
+                    self.selected = Some(idx);
+                    self.start_text_edit_existing(idx);
+                }
+                Shape::Badge { .. } => {
+                    self.selected = Some(idx);
+                    self.start_badge_number_edit(idx);
+                }
+                _ => {}
+            }
+        }
 
         if response.drag_started()
-            && let Some(p) = pointer {
-                match self.tool {
-                    Tool::Arrow | Tool::Rect | Tool::Ellipse => {
-                        self.drag = Some(Drag::Draw {
-                            start: p,
-                            current: p,
+            && let Some(p) = pointer
+        {
+            match self.tool {
+                Tool::Arrow | Tool::Rect | Tool::Ellipse => {
+                    self.drag = Some(Drag::Draw {
+                        start: p,
+                        current: p,
+                    });
+                }
+                Tool::Select => {
+                    self.selected = self.hit_test(p, t.scale);
+                    self.sync_text_style_from_selection();
+                    if self.selected.is_some() {
+                        self.drag = Some(Drag::Move {
+                            last: p,
+                            before: self.annotations.clone(),
+                            moved: false,
                         });
                     }
-                    Tool::Select => {
-                        self.selected = self.hit_test(p, t.scale);
-                        self.sync_text_style_from_selection();
-                        if self.selected.is_some() {
-                            self.drag = Some(Drag::Move {
-                                last: p,
-                                before: self.annotations.clone(),
-                                moved: false,
-                            });
-                        }
-                    }
-                    Tool::Badge | Tool::Text => {}
                 }
+                Tool::Badge | Tool::Text => {}
             }
+        }
 
         if response.dragged()
-            && let Some(p) = pointer {
-                match &mut self.drag {
-                    Some(Drag::Draw { current, .. }) => *current = p,
-                    Some(Drag::Move { last, moved, .. }) => {
-                        let delta = p - *last;
-                        if delta != Vec2::ZERO {
-                            if let Some(idx) = self.selected {
-                                self.annotations[idx].translate(delta);
-                                *moved = true;
-                            }
-                            *last = p;
+            && let Some(p) = pointer
+        {
+            match &mut self.drag {
+                Some(Drag::Draw { current, .. }) => *current = p,
+                Some(Drag::Move { last, moved, .. }) => {
+                    let delta = p - *last;
+                    if delta != Vec2::ZERO {
+                        if let Some(idx) = self.selected {
+                            self.annotations[idx].translate(delta);
+                            *moved = true;
                         }
+                        *last = p;
                     }
-                    None => {}
                 }
+                None => {}
             }
+        }
 
         if response.drag_stopped() {
             match self.drag.take() {
                 Some(Drag::Draw { start, current }) => self.commit_draw(start, current),
-                Some(Drag::Move { before, moved: true, .. }) => {
+                Some(Drag::Move {
+                    before,
+                    moved: true,
+                    ..
+                }) => {
                     self.undo_stack.push(before);
                     self.redo_stack.clear();
                 }
@@ -728,9 +738,10 @@ impl Editor {
             Some(k) => {
                 for ann in &mut self.annotations {
                     if let Shape::Badge { number, .. } = &mut ann.shape
-                        && *number > k {
-                            *number += 1;
-                        }
+                        && *number > k
+                    {
+                        *number += 1;
+                    }
                 }
                 k + 1
             }
@@ -834,7 +845,7 @@ impl Editor {
                 Shape::Badge { center, .. } => Some((
                     i,
                     center,
-                    crate::annotation::badge_radius(a.stroke_width) * 2.0,
+                    crate::domain::annotation::badge_radius(a.stroke_width) * 2.0,
                 )),
                 _ => None,
             })
@@ -919,9 +930,10 @@ impl Editor {
             self.editing_badge = None;
         } else if done
             && let Some(edit) = self.editing_badge.take()
-                && let Ok(n) = edit.buffer.trim().parse::<u32>() {
-                    self.set_badge_number(edit.index, n);
-                }
+            && let Ok(n) = edit.buffer.trim().parse::<u32>()
+        {
+            self.set_badge_number(edit.index, n);
+        }
     }
 
     fn commit_draw(&mut self, start: Pos2, end: Pos2) {
@@ -1003,16 +1015,17 @@ impl Editor {
     fn start_text_edit_existing(&mut self, idx: usize) {
         self.commit_text_edit();
         if let Some(ann) = self.annotations.get(idx)
-            && let Shape::Text { text, .. } = &ann.shape {
-                self.editing_text = Some(TextEditState {
-                    index: idx,
-                    buffer: text.clone(),
-                    original: Some(text.clone()),
-                    just_created: false,
-                    request_focus: true,
-                });
-                self.sync_text_style_from_selection();
-            }
+            && let Shape::Text { text, .. } = &ann.shape
+        {
+            self.editing_text = Some(TextEditState {
+                index: idx,
+                buffer: text.clone(),
+                original: Some(text.clone()),
+                just_created: false,
+                request_focus: true,
+            });
+            self.sync_text_style_from_selection();
+        }
     }
 
     fn commit_text_edit(&mut self) {
@@ -1028,9 +1041,10 @@ impl Editor {
                 }
                 self.undo_stack.pop();
             } else if let Some(ann) = self.annotations.get_mut(edit.index)
-                && let Shape::Text { text, .. } = &mut ann.shape {
-                    *text = trimmed;
-                }
+                && let Shape::Text { text, .. } = &mut ann.shape
+            {
+                *text = trimmed;
+            }
         } else if trimmed.is_empty() {
             // Texte vidé : suppression de l'annotation.
             self.push_undo();
@@ -1041,9 +1055,10 @@ impl Editor {
         } else if edit.original.as_deref() != Some(trimmed.as_str()) {
             self.push_undo();
             if let Some(ann) = self.annotations.get_mut(edit.index)
-                && let Shape::Text { text, .. } = &mut ann.shape {
-                    *text = trimmed;
-                }
+                && let Shape::Text { text, .. } = &mut ann.shape
+            {
+                *text = trimmed;
+            }
         }
     }
 
@@ -1116,11 +1131,12 @@ impl Editor {
 
     fn delete_selected(&mut self) {
         if let Some(idx) = self.selected.take()
-            && idx < self.annotations.len() {
-                self.push_undo();
-                self.annotations.remove(idx);
-                self.renumber_badges();
-            }
+            && idx < self.annotations.len()
+        {
+            self.push_undo();
+            self.annotations.remove(idx);
+            self.renumber_badges();
+        }
     }
 
     fn renumber_badges(&mut self) {

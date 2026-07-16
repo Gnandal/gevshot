@@ -5,7 +5,7 @@ use ab_glyph::{Font, FontVec, ScaleFont};
 use eframe::egui::Color32;
 use tiny_skia::{FillRule, LineCap, Paint, PathBuilder, Pixmap, Stroke, Transform};
 
-use crate::annotation::{Annotation, FontChoice, Shape, badge_radius};
+use crate::domain::annotation::{Annotation, FontChoice, Shape, badge_radius};
 
 // ----- Aplatissement des annotations sur les pixels -------------------------
 
@@ -30,8 +30,8 @@ pub fn flatten(image: &image::RgbaImage, annotations: &[Annotation]) -> image::R
     for ann in annotations {
         match &ann.shape {
             Shape::Badge { center, number, .. } => {
-                let font = crate::fonts::export_font(FontChoice::Sans, true)
-                    .or_else(|| crate::fonts::export_font(FontChoice::Sans, false));
+                let font = crate::infra::fonts::export_font(FontChoice::Sans, true)
+                    .or_else(|| crate::infra::fonts::export_font(FontChoice::Sans, false));
                 let Some(font) = font else { continue };
                 let r = badge_radius(ann.stroke_width);
                 draw_text_centered(
@@ -50,7 +50,7 @@ pub fn flatten(image: &image::RgbaImage, annotations: &[Annotation]) -> image::R
                 font,
                 bold,
             } => {
-                let Some(font) = crate::fonts::export_font(*font, *bold) else {
+                let Some(font) = crate::infra::fonts::export_font(*font, *bold) else {
                     continue;
                 };
                 draw_text_topleft(&mut out, font, (pos.x, pos.y), *size, text, ann.color);

@@ -47,16 +47,17 @@ Prérequis : Rust (toolchain MSVC) + Visual Studio Build Tools (workload C++).
 
 ## Architecture
 
-| Fichier | Rôle |
+Le code est organisé en quatre couches :
+
+| Couche | Contenu |
 |---|---|
-| `src/main.rs` | Point d'entrée, fenêtre eframe |
-| `src/app.rs` | Machine à états : Vide → Sélection de région → Édition |
-| `src/capture.rs` | Capture d'écran (xcap) |
-| `src/annotation.rs` | Modèle vectoriel des annotations : rendu egui, hit-test |
-| `src/editor.rs` | Outils, interactions souris, undo/redo |
-| `src/export.rs` | Aplatissement sur pixels (tiny-skia + ab_glyph), presse-papiers, PNG |
-| `src/project.rs` | Format `.gev` (JSON : PNG base64 + annotations) |
-| `src/tray.rs` | Icône barre système et menu |
+| `src/domain/` | Métier pur : `annotation.rs` (modèle vectoriel, rendu egui, hit-test), `editor.rs` (état de l'éditeur, outils, undo/redo, légende) |
+| `src/infra/` | Système et réseau : `capture.rs` (xcap), `export.rs` (aplatissement tiny-skia + ab_glyph, presse-papiers, PNG), `project.rs` (format `.gev`), `config.rs`, `fonts.rs`, `tray.rs`, `ai.rs` (API Claude) |
+| `src/ui/` | Présentation réutilisable : `theme.rs`, `widgets.rs` (boutons à icônes peintes), `settings.rs` (contenu des Paramètres) |
+| `src/app/` | Orchestration : `mod.rs` (état global, cycle de vie eframe), puis un module par aspect — `capture_flow`, `region_select`, `toolbar`, `status_bar`, `legend`, `window_picker`, `ai_flow`, `files`, `settings_modal` |
+
+`src/main.rs` assemble le tout ; `src/appicon.rs` (icône dessinée par code)
+est partagé avec `build.rs`, qui génère le `.ico` embarqué dans l'exe.
 
 Les annotations sont stockées en coordonnées de l'image source et rendues
 vectoriellement dans l'éditeur ; elles ne sont aplaties sur les pixels

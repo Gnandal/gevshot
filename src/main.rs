@@ -1,19 +1,18 @@
-﻿#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod ai;
-mod annotation;
+//! GEVSHOT — capture d'écran annotée pour la documentation logicielle.
+//!
+//! Architecture en couches :
+//! - `domain` : modèle d'annotations et état de l'éditeur (métier pur) ;
+//! - `infra`  : accès système et réseau (capture, fichiers, config, IA…) ;
+//! - `ui`     : thème, widgets et écrans réutilisables ;
+//! - `app`    : orchestration — état global, flux de capture, barres, panneaux.
+
 mod app;
 mod appicon;
-mod capture;
-mod config;
-mod editor;
-mod export;
-mod fonts;
-mod project;
-mod settings_ui;
-mod theme;
-mod tray;
-mod widgets;
+mod domain;
+mod infra;
+mod ui;
 
 use eframe::egui;
 
@@ -37,8 +36,8 @@ fn main() -> eframe::Result {
         "GEVSHOT",
         options,
         Box::new(|cc| {
-            theme::apply(&cc.egui_ctx);
-            fonts::install(&cc.egui_ctx);
+            ui::theme::apply(&cc.egui_ctx);
+            infra::fonts::install(&cc.egui_ctx);
             Ok(Box::new(app::GevshotApp::new()))
         }),
     )

@@ -2,6 +2,7 @@
 <!-- Installeur MSI de GEVSHOT (WiX v4+).
      Compilation :
        wix build installer\gevshot.wxs -arch x64 ^
+         -d Version=1.0.0 ^
          -d ExePath=target\release\gevshot.exe -d IcoPath=<chemin .ico> ^
          -o target\wix\GEVSHOT-x64.msi
      L'UpgradeCode est fixe : ne pas le changer, il permet aux futures
@@ -9,7 +10,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="GEVSHOT"
            Manufacturer="GEVSHOT"
-           Version="0.1.0"
+           Version="$(var.Version)"
            Language="1036"
            Scope="perMachine"
            UpgradeCode="C24FB8D7-87F2-4031-99CB-D8BA342D089B">

@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use ab_glyph::FontVec;
 use eframe::egui;
 
-use crate::annotation::FontChoice;
+use crate::domain::annotation::FontChoice;
 
 /// Familles proposées, dans l'ordre `(font, bold)` → index = font*2 + bold.
 /// Chaque entrée liste les fichiers candidats dans C:\Windows\Fonts.
