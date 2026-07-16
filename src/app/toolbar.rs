@@ -15,7 +15,7 @@ impl GevshotApp {
             // Une seule rangée : les groupes qui ne tiennent pas se replient
             // dans un menu « ⋯ » en bout de barre. Largeurs estimées.
             const W_FIXED: f32 = 92.0; // bouton capture + menu de modes + marges
-            const W_TOOLS: f32 = 240.0;
+            const W_TOOLS: f32 = 280.0;
             const W_COLORS: f32 = 155.0;
             const W_STROKES: f32 = 145.0;
             const W_UNDO: f32 = 85.0;

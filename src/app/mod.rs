@@ -193,6 +193,33 @@ impl GevshotApp {
         self.error = Some(msg.into());
         self.status = None;
     }
+
+    /// Recadre l'image éditée à `rect` (coordonnées image) et translate
+    /// les annotations pour qu'elles restent alignées sur le contenu.
+    fn apply_crop(&mut self, ctx: &egui::Context, rect: egui::Rect) {
+        let Stage::Editing { capture } = &mut self.stage else {
+            return;
+        };
+        let (iw, ih) = (capture.image.width(), capture.image.height());
+        let x = (rect.min.x.max(0.0) as u32).min(iw.saturating_sub(1));
+        let y = (rect.min.y.max(0.0) as u32).min(ih.saturating_sub(1));
+        let w = ((rect.width().round() as u32).max(1)).min(iw - x);
+        let h = ((rect.height().round() as u32).max(1)).min(ih - y);
+        if x == 0 && y == 0 && w == iw && h == ih {
+            return;
+        }
+        let image = image::imageops::crop_imm(&capture.image, x, y, w, h).to_image();
+        *capture = Capture::from_image(ctx, image);
+        let removed = self.editor.translate_after_crop(
+            -egui::vec2(x as f32, y as f32),
+            egui::vec2(w as f32, h as f32),
+        );
+        let mut status = format!("Image recadrée : {w} × {h} px");
+        if removed > 0 {
+            status.push_str(&format!(" — {removed} annotation(s) hors zone supprimée(s)"));
+        }
+        self.set_status(status);
+    }
 }
 
 impl eframe::App for GevshotApp {
@@ -284,6 +311,10 @@ impl eframe::App for GevshotApp {
                     });
                 }
             });
+
+        if let Some(rect) = self.editor.take_crop_request() {
+            self.apply_crop(&ctx, rect);
+        }
 
         self.window_picker_ui(&ctx);
 

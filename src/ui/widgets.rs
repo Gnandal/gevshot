@@ -145,6 +145,15 @@ pub fn icon_rect(p: &Painter, c: Pos2, color: Color32) {
     );
 }
 
+/// Recadrage : deux équerres entrecroisées.
+pub fn icon_crop(p: &Painter, c: Pos2, color: Color32) {
+    let stroke = Stroke::new(1.6, color);
+    p.line_segment([c + vec2(-4.5, -7.5), c + vec2(-4.5, 4.5)], stroke);
+    p.line_segment([c + vec2(-4.5, 4.5), c + vec2(7.5, 4.5)], stroke);
+    p.line_segment([c + vec2(-7.5, -4.5), c + vec2(4.5, -4.5)], stroke);
+    p.line_segment([c + vec2(4.5, -4.5), c + vec2(4.5, 7.5)], stroke);
+}
+
 /// Étincelle (fonctions IA) : étoile à quatre branches + petit éclat.
 pub fn icon_sparkle(p: &Painter, c: Pos2, color: Color32) {
     let stroke = Stroke::new(1.5, color);

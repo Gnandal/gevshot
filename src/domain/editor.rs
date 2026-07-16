@@ -17,6 +17,7 @@ pub enum Tool {
     Rect,
     Ellipse,
     Text,
+    Crop,
 }
 
 /// Session de saisie de texte en cours sur le canevas.
@@ -68,6 +69,10 @@ pub struct Editor {
     badge_start: u32,
     /// Anneau blanc autour des prochaines pastilles.
     badge_border: bool,
+    /// Zone de recadrage en attente de confirmation (coordonnées image).
+    pending_crop: Option<Rect>,
+    /// Recadrage confirmé, à consommer par l'application.
+    crop_request: Option<Rect>,
 }
 
 impl Default for Editor {
@@ -89,6 +94,8 @@ impl Default for Editor {
             editing_badge: None,
             badge_start: 1,
             badge_border: true,
+            pending_crop: None,
+            crop_request: None,
         }
     }
 }
@@ -103,6 +110,8 @@ impl Editor {
         self.drag = None;
         self.editing_text = None;
         self.editing_badge = None;
+        self.pending_crop = None;
+        self.crop_request = None;
     }
 
     pub fn annotations(&self) -> &[Annotation] {
@@ -133,7 +142,7 @@ impl Editor {
 
     /// Icônes des outils (toujours visibles).
     pub fn tools_group_ui(&mut self, ui: &mut egui::Ui) {
-        let tools: [(Tool, ToolIcon, &str); 6] = [
+        let tools: [(Tool, ToolIcon, &str); 7] = [
             (
                 Tool::Select,
                 widgets::icon_select,
@@ -144,6 +153,7 @@ impl Editor {
             (Tool::Rect, widgets::icon_rect, "Rectangle"),
             (Tool::Ellipse, widgets::icon_ellipse, "Ellipse"),
             (Tool::Text, widgets::icon_text, "Texte"),
+            (Tool::Crop, widgets::icon_crop, "Recadrer l'image"),
         ];
         for (tool, icon, tip) in tools {
             if widgets::icon_button(ui, self.tool == tool, icon)
@@ -151,6 +161,9 @@ impl Editor {
                 .clicked()
             {
                 self.tool = tool;
+                if tool != Tool::Crop {
+                    self.pending_crop = None;
+                }
             }
         }
     }
@@ -519,6 +532,13 @@ impl Editor {
             Tool::Rect => "Glissez pour encadrer une zone",
             Tool::Ellipse => "Glissez pour encercler une zone",
             Tool::Text => "Cliquez pour placer du texte — Entrée pour valider, Échap pour annuler",
+            Tool::Crop => {
+                if self.pending_crop.is_some() {
+                    "Entrée ou « Recadrer » pour valider — Échap pour annuler"
+                } else {
+                    "Glissez pour choisir la zone à conserver"
+                }
+            }
         }
     }
 
@@ -535,6 +555,39 @@ impl Editor {
     pub fn set_defaults(&mut self, color: Color32, stroke_width: f32) {
         self.color = color;
         self.stroke_width = stroke_width;
+    }
+
+    /// Recadrage confirmé par l'utilisateur, à appliquer à l'image
+    /// (coordonnées image, non arrondies).
+    pub fn take_crop_request(&mut self) -> Option<Rect> {
+        self.crop_request.take()
+    }
+
+    /// Après recadrage de l'image : translate les annotations (et tout
+    /// l'historique undo/redo, pour qu'il reste cohérent), supprime celles
+    /// entièrement hors de la nouvelle image, renumérote les pastilles et
+    /// repasse en sélection. Renvoie le nombre d'annotations supprimées.
+    pub fn translate_after_crop(&mut self, delta: Vec2, new_size: Vec2) -> usize {
+        let bounds = Rect::from_min_size(Pos2::ZERO, new_size);
+        let translate_and_prune = |anns: &mut Vec<Annotation>| {
+            for ann in anns.iter_mut() {
+                ann.translate(delta);
+            }
+            let before = anns.len();
+            anns.retain(|ann| ann.bounding_rect().intersects(bounds));
+            before - anns.len()
+        };
+        let removed = translate_and_prune(&mut self.annotations);
+        for snapshot in self.undo_stack.iter_mut().chain(&mut self.redo_stack) {
+            translate_and_prune(snapshot);
+        }
+        self.normalize_badges();
+        self.selected = None;
+        self.drag = None;
+        self.editing_text = None;
+        self.editing_badge = None;
+        self.tool = Tool::Select;
+        removed
     }
 
     /// Affiche l'image et gère le dessin/la sélection des annotations.
@@ -577,6 +630,8 @@ impl Editor {
         }
         self.paint_selection(&painter, &t);
         self.paint_preview(&painter, &t);
+        self.paint_crop(&painter, &t, image_rect);
+        self.crop_confirm_ui(ui, &t);
         self.text_edit_overlay(ui, &t);
         self.badge_edit_overlay(ui, &t);
 
@@ -604,6 +659,7 @@ impl Editor {
         {
             match self.tool {
                 Tool::Badge => self.place_badge(p),
+                Tool::Crop => self.pending_crop = None,
                 Tool::Select => {
                     self.selected = self.hit_test(p, t.scale);
                     self.sync_text_style_from_selection();
@@ -644,7 +700,7 @@ impl Editor {
             && let Some(p) = pointer
         {
             match self.tool {
-                Tool::Arrow | Tool::Rect | Tool::Ellipse => {
+                Tool::Arrow | Tool::Rect | Tool::Ellipse | Tool::Crop => {
                     self.drag = Some(Drag::Draw {
                         start: p,
                         current: p,
@@ -704,13 +760,23 @@ impl Editor {
         if ctx.egui_wants_keyboard_input() {
             return;
         }
-        let (undo, redo, delete) = ctx.input(|i| {
+        let (undo, redo, delete, enter, escape) = ctx.input(|i| {
             (
                 i.modifiers.ctrl && i.key_pressed(egui::Key::Z),
                 i.modifiers.ctrl && i.key_pressed(egui::Key::Y),
                 i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace),
+                i.key_pressed(egui::Key::Enter),
+                i.key_pressed(egui::Key::Escape),
             )
         });
+        if self.pending_crop.is_some() {
+            if enter {
+                self.crop_request = self.pending_crop.take();
+            }
+            if escape {
+                self.pending_crop = None;
+            }
+        }
         if undo {
             self.undo();
         }
@@ -937,6 +1003,11 @@ impl Editor {
     }
 
     fn commit_draw(&mut self, start: Pos2, end: Pos2) {
+        if self.tool == Tool::Crop {
+            let rect = Rect::from_two_pos(start, end);
+            self.pending_crop = (rect.width() >= 5.0 && rect.height() >= 5.0).then_some(rect);
+            return;
+        }
         let shape = match self.tool {
             Tool::Arrow if start.distance(end) >= 5.0 => Some(Shape::Arrow {
                 from: start,
@@ -1203,6 +1274,92 @@ impl Editor {
             4.0,
         ) {
             painter.add(shape);
+        }
+    }
+
+    /// Voile sombre autour de la zone de recadrage (en cours de tracé ou
+    /// en attente de confirmation), bord blanc et dimensions.
+    fn paint_crop(&self, painter: &egui::Painter, t: &CanvasTransform, image_rect: Rect) {
+        if self.tool != Tool::Crop {
+            return;
+        }
+        let rect = match (&self.drag, self.pending_crop) {
+            (Some(Drag::Draw { start, current }), _) => Rect::from_two_pos(*start, *current),
+            (None, Some(r)) => r,
+            _ => return,
+        };
+        let sel = Rect::from_min_max(t.to_screen(rect.min), t.to_screen(rect.max))
+            .intersect(image_rect);
+        if sel.width() < 1.0 || sel.height() < 1.0 {
+            return;
+        }
+        let veil = Color32::from_black_alpha(120);
+        for part in [
+            Rect::from_min_max(image_rect.min, egui::pos2(image_rect.max.x, sel.min.y)),
+            Rect::from_min_max(egui::pos2(image_rect.min.x, sel.max.y), image_rect.max),
+            Rect::from_min_max(
+                egui::pos2(image_rect.min.x, sel.min.y),
+                egui::pos2(sel.min.x, sel.max.y),
+            ),
+            Rect::from_min_max(
+                egui::pos2(sel.max.x, sel.min.y),
+                egui::pos2(image_rect.max.x, sel.max.y),
+            ),
+        ] {
+            painter.rect_filled(part, 0.0, veil);
+        }
+        painter.rect_stroke(
+            sel,
+            egui::CornerRadius::ZERO,
+            Stroke::new(1.5, Color32::WHITE),
+            egui::StrokeKind::Outside,
+        );
+        let dims = format!(
+            "{} × {}",
+            rect.width().round() as u32,
+            rect.height().round() as u32
+        );
+        painter.text(
+            sel.min + egui::vec2(0.0, -8.0),
+            egui::Align2::LEFT_BOTTOM,
+            dims,
+            egui::FontId::proportional(13.0),
+            Color32::WHITE,
+        );
+    }
+
+    /// Boutons de validation du recadrage, sous la zone sélectionnée.
+    fn crop_confirm_ui(&mut self, ui: &mut egui::Ui, t: &CanvasTransform) {
+        if self.tool != Tool::Crop || self.drag.is_some() {
+            return;
+        }
+        let Some(rect) = self.pending_crop else {
+            return;
+        };
+        let sel = Rect::from_min_max(t.to_screen(rect.min), t.to_screen(rect.max));
+        let mut apply = false;
+        let mut cancel = false;
+        egui::Area::new(egui::Id::new("crop_confirm"))
+            .fixed_pos(sel.left_bottom() + egui::vec2(0.0, 8.0))
+            .order(egui::Order::Foreground)
+            .show(ui.ctx(), |aui| {
+                aui.horizontal(|aui| {
+                    if aui
+                        .button(egui::RichText::new("Recadrer").strong())
+                        .on_hover_text("Entrée")
+                        .clicked()
+                    {
+                        apply = true;
+                    }
+                    if aui.button("Annuler").on_hover_text("Échap").clicked() {
+                        cancel = true;
+                    }
+                });
+            });
+        if apply {
+            self.crop_request = self.pending_crop.take();
+        } else if cancel {
+            self.pending_crop = None;
         }
     }
 
