@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+  # Lancement manuel : construit tous les bundles sans publier de release.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,7 +14,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-release:
+  build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,11 +25,11 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Version from tag
+      - name: Version from Cargo.toml
         id: version
         shell: pwsh
         run: |
-          $v = "${{ github.ref_name }}".TrimStart("v")
+          $v = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"').Matches.Groups[1].Value
           "value=$v" >> $env:GITHUB_OUTPUT
 
       - name: Build release
@@ -50,9 +52,176 @@ jobs:
 
       - name: Package portable exe
         shell: pwsh
+        run: Compress-Archive -Path target/release/gevshot.exe -DestinationPath "gevshot-v${{ steps.version.outputs.value }}-windows-x64.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            GEVSHOT-*-x64.msi
+            gevshot-*-windows-x64.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Version from Cargo.toml
+        id: version
+        run: echo "value=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: System dependencies
         run: |
-          $version = "${{ github.ref_name }}"
-          Compress-Archive -Path target/release/gevshot.exe -DestinationPath "gevshot-$version-windows-x64.zip"
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev libayatana-appindicator3-dev libxkbcommon-dev \
+            libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+            libdbus-1-dev pkg-config
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Generate icons
+        run: cargo run --release --example gen_icon -- icons 256 512
+
+      - name: Build .deb
+        run: |
+          v="${{ steps.version.outputs.value }}"
+          pkg=pkgroot
+          mkdir -p "$pkg/DEBIAN" "$pkg/usr/bin" "$pkg/usr/share/applications" \
+            "$pkg/usr/share/icons/hicolor/256x256/apps" "$pkg/usr/share/icons/hicolor/512x512/apps"
+          cp target/release/gevshot "$pkg/usr/bin/gevshot"
+          cp icons/gevshot-256.png "$pkg/usr/share/icons/hicolor/256x256/apps/gevshot.png"
+          cp icons/gevshot-512.png "$pkg/usr/share/icons/hicolor/512x512/apps/gevshot.png"
+          cat > "$pkg/usr/share/applications/gevshot.desktop" <<'EOF'
+          [Desktop Entry]
+          Type=Application
+          Name=GEVSHOT
+          Comment=Capture d'écran annotée pour la documentation logicielle
+          Exec=gevshot
+          Icon=gevshot
+          Terminal=false
+          Categories=Graphics;Utility;
+          EOF
+          cat > "$pkg/DEBIAN/control" <<EOF
+          Package: gevshot
+          Version: $v
+          Section: graphics
+          Priority: optional
+          Architecture: amd64
+          Maintainer: Gnandal <egnandal500@gmail.com>
+          Depends: libgtk-3-0, libayatana-appindicator3-1 | libappindicator3-1
+          Description: Capture d'écran annotée pour la documentation logicielle
+           Capture de régions, fenêtres ou écran entier avec annotations
+           (pastilles numérotées, flèches, cadres, texte), légende exportable
+           en Markdown et recadrage.
+          EOF
+          dpkg-deb --build --root-owner-group "$pkg" "gevshot_${v}_amd64.deb"
+
+      - name: Package tar.gz
+        run: tar -czf "gevshot-v${{ steps.version.outputs.value }}-linux-x64.tar.gz" -C target/release gevshot
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            gevshot_*_amd64.deb
+            gevshot-*-linux-x64.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Version from Cargo.toml
+        id: version
+        run: echo "value=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Build release (both architectures)
+        run: |
+          cargo build --release --target aarch64-apple-darwin
+          cargo build --release --target x86_64-apple-darwin
+
+      - name: Universal binary
+        run: |
+          lipo -create -output gevshot \
+            target/aarch64-apple-darwin/release/gevshot \
+            target/x86_64-apple-darwin/release/gevshot
+
+      - name: Generate icons
+        run: cargo run --release --example gen_icon -- icons 16 32 64 128 256 512 1024
+
+      - name: Build .icns
+        run: |
+          mkdir gevshot.iconset
+          cp icons/gevshot-16.png   gevshot.iconset/icon_16x16.png
+          cp icons/gevshot-32.png   gevshot.iconset/icon_16x16@2x.png
+          cp icons/gevshot-32.png   gevshot.iconset/icon_32x32.png
+          cp icons/gevshot-64.png   gevshot.iconset/icon_32x32@2x.png
+          cp icons/gevshot-128.png  gevshot.iconset/icon_128x128.png
+          cp icons/gevshot-256.png  gevshot.iconset/icon_128x128@2x.png
+          cp icons/gevshot-256.png  gevshot.iconset/icon_256x256.png
+          cp icons/gevshot-512.png  gevshot.iconset/icon_256x256@2x.png
+          cp icons/gevshot-512.png  gevshot.iconset/icon_512x512.png
+          cp icons/gevshot-1024.png gevshot.iconset/icon_512x512@2x.png
+          iconutil -c icns gevshot.iconset -o gevshot.icns
+
+      - name: Build .app bundle
+        run: |
+          v="${{ steps.version.outputs.value }}"
+          app="GEVSHOT.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp gevshot "$app/Contents/MacOS/gevshot"
+          chmod +x "$app/Contents/MacOS/gevshot"
+          cp gevshot.icns "$app/Contents/Resources/gevshot.icns"
+          cat > "$app/Contents/Info.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleName</key><string>GEVSHOT</string>
+            <key>CFBundleDisplayName</key><string>GEVSHOT</string>
+            <key>CFBundleIdentifier</key><string>io.github.gnandal.gevshot</string>
+            <key>CFBundleExecutable</key><string>gevshot</string>
+            <key>CFBundleIconFile</key><string>gevshot</string>
+            <key>CFBundleVersion</key><string>$v</string>
+            <key>CFBundleShortVersionString</key><string>$v</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          EOF
+          ditto -c -k --keepParent "$app" "gevshot-v${v}-macos-universal.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: gevshot-*-macos-universal.zip
+
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    # Publication uniquement sur tag : le lancement manuel sert à tester.
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -62,3 +231,6 @@ jobs:
           files: |
             GEVSHOT-*-x64.msi
             gevshot-*-windows-x64.zip
+            gevshot_*_amd64.deb
+            gevshot-*-linux-x64.tar.gz
+            gevshot-*-macos-universal.zip
