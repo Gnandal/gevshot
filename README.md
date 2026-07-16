@@ -13,7 +13,11 @@ Capture → annote → exporte, en moins de 30 secondes.
   - ↗ flèches
   - ▭ rectangles d'encadrement
   - ◯ ellipses d'encerclement
+  - 🗛 étiquettes de texte (police, taille, gras)
   - couleur (rouge doc par défaut) et épaisseur réglables
+- **Recadrage** : tracez la zone à conserver, `Entrée` pour valider — les
+  annotations suivent l'image, celles hors zone sont supprimées et les
+  pastilles renumérotées.
 - **Export** :
   - `Ctrl+C` → presse-papiers
   - `Ctrl+S` → PNG auto-nommé `capture-AAAA-MM-JJ-NNN.png` dans `Images\Gevshot`
@@ -35,15 +39,34 @@ Capture → annote → exporte, en moins de 30 secondes.
 | `Suppr` | Supprimer l'annotation sélectionnée |
 | `Échap` (sélection) | Annuler la capture |
 | `Entrée` (sélection) | Capturer tout l'écran |
+| `Entrée` / `Échap` (recadrage) | Valider / annuler le recadrage |
+
+## Installation
+
+Sur la [page des releases](https://github.com/Gnandal/gevshot/releases/latest) :
+
+| Plateforme | Fichiers |
+|---|---|
+| Windows 10/11 | `GEVSHOT-<version>-x64.msi` (installeur) ou `gevshot-…-windows-x64.zip` (exe portable) |
+| Ubuntu / Debian | `gevshot_<version>_amd64.deb` (entrée de menu incluse) ou `gevshot-…-linux-x64.tar.gz` |
+| macOS 11+ | `gevshot-…-macos-universal.zip` (app universelle Intel + Apple Silicon) |
+
+L'app macOS n'est pas signée : au premier lancement, clic droit → « Ouvrir »,
+puis autorisez l'enregistrement de l'écran. Sous Linux, X11 est recommandé
+(Wayland selon le compositeur).
 
 ## Développement
 
 ```powershell
-cargo run            # debug
-cargo build --release  # binaire optimisé (target/release/Gevshot.exe)
+cargo run              # debug
+cargo build --release  # binaire optimisé
 ```
 
-Prérequis : Rust (toolchain MSVC) + Visual Studio Build Tools (workload C++).
+Prérequis :
+
+- **Windows** : Rust (toolchain MSVC) + Visual Studio Build Tools (workload C++).
+- **Linux** : `libgtk-3-dev libayatana-appindicator3-dev libxkbcommon-dev libxcb1-dev libdbus-1-dev pkg-config`.
+- **macOS** : Xcode Command Line Tools.
 
 ## Architecture
 

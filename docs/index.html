@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GEVSHOT — Capture d'écran annotée pour documenter vos logiciels</title>
-<meta name="description" content="GEVSHOT : capturez, annotez (numéros, flèches, cadres, texte), générez la légende — et documentez vos logiciels en moins de 30 secondes. Windows, gratuit, open source.">
+<meta name="description" content="GEVSHOT : capturez, annotez (numéros, flèches, cadres, texte), recadrez, générez la légende — et documentez vos logiciels en moins de 30 secondes. Windows, macOS, Linux — gratuit, open source.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='2' y='2' width='96' height='96' rx='21' fill='%231D4ED8'/%3E%3Crect x='16' y='34' width='68' height='42' rx='7' fill='%23fff'/%3E%3Crect x='36' y='24' width='28' height='14' rx='5' fill='%23fff'/%3E%3Ccircle cx='50' cy='55' r='15.5' fill='%231D4ED8'/%3E%3Ccircle cx='50' cy='55' r='8.5' fill='%23D9E6FA'/%3E%3Ccircle cx='73.5' cy='41.5' r='3.8' fill='%23E02828'/%3E%3C/svg%3E">
 <style>
 :root {
@@ -152,6 +152,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8 L12 4 L20 8 V16.5 L12 20.5 L4 16.5 Z"/><path d="M4 8 L12 12 L20 8 M12 12 V20.5"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4 v11 M7.5 11 L12 15.5 L16.5 11 M5 19.5 h14"/></symbol>
     <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 L4 12 L8.5 17 M15.5 7 L20 12 L15.5 17"/></symbol>
+    <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="10" rx="1.5"/><path d="M3 18.5 h18"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6 h16 v11 h-9 l-4.5 3.5 V17 H4 Z"/><path d="M8 10.5 h8 M8 13.5 h5"/></symbol>
   </defs>
 </svg>
@@ -190,7 +191,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
           <a class="btn btn-primary" href="https://github.com/Gnandal/gevshot/releases/latest">Télécharger</a>
           <a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot">Code source</a>
         </div>
-        <p class="note">Windows 10/11 · gratuit · binaire autonome de ~10 Mo, aucun runtime requis</p>
+        <p class="note">Windows · macOS · Linux — gratuit, binaire autonome, aucun runtime requis</p>
       </div>
 
       <div class="mock" role="img" aria-label="Aperçu de l'éditeur GEVSHOT">
@@ -232,7 +233,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
       <p class="sub">Des annotations vectorielles, toujours éditables — rien n'est gravé dans l'image avant l'export.</p>
       <div class="grid">
         <div class="card"><div class="ic"><svg class="icon"><use href="#i-badge"/></svg></div><h3>Numérotation intelligente</h3><p>Pastilles auto-incrémentées, insertion au milieu d'une séquence, renumérotation en ordre de lecture, numéro de départ configurable.</p></div>
-        <div class="card"><div class="ic"><svg class="icon"><use href="#i-arrow"/></svg></div><h3>Flèches, cadres, texte</h3><p>Pointez, encadrez, encerclez, étiquetez. Couleurs et épaisseurs au clic, police au choix — tout reste déplaçable et annulable.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-arrow"/></svg></div><h3>Flèches, cadres, texte, recadrage</h3><p>Pointez, encadrez, encerclez, étiquetez — tout reste déplaçable et annulable. Recadrez a posteriori : les annotations suivent, celles hors zone disparaissent.</p></div>
         <div class="card"><div class="ic"><svg class="icon"><use href="#i-legend"/></svg></div><h3>Légende exportable</h3><p>Un texte par pastille dans un panneau dédié, copié en Markdown numéroté — prêt à coller sous l'image dans votre wiki.</p></div>
         <div class="card"><div class="ic"><svg class="icon"><use href="#i-sparkle"/></svg></div><h3>Assisté par IA</h3><p>Générez le texte des étapes depuis l'image annotée, ou décrivez ce qu'il faut annoter et laissez l'IA poser les repères.</p></div>
         <div class="card"><div class="ic"><svg class="icon"><use href="#i-file"/></svg></div><h3>Format projet .gev</h3><p>Image et annotations dans un fichier rouvrable. Le logiciel évolue ? Recapturez le fond en conservant vos annotations.</p></div>
@@ -247,7 +248,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
       <p class="sub">Conçu pour la boucle capture → annotation → doc, répétée des dizaines de fois par guide.</p>
       <div class="steps">
         <div class="step"><p><strong>Capturez</strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> fige l'écran : tracez une région — ou choisissez écran entier, fenêtre active, fenêtre au choix, capture différée.</p></div>
-        <div class="step"><p><strong>Annotez</strong>Pastilles numérotées, flèches, cadres, ellipses, texte — toujours repositionnables.</p></div>
+        <div class="step"><p><strong>Annotez</strong>Pastilles numérotées, flèches, cadres, ellipses, texte — toujours repositionnables. Recadrez l'image au besoin.</p></div>
         <div class="step"><p><strong>Légendez</strong>Un texte par étape, à la main ou généré par IA, copié en Markdown d'un clic.</p></div>
         <div class="step"><p><strong>Exportez</strong><kbd>Ctrl</kbd>+<kbd>C</kbd> vers le presse-papiers, <kbd>Ctrl</kbd>+<kbd>S</kbd> en PNG auto-nommé — et le projet .gev pour les mises à jour futures.</p></div>
       </div>
@@ -266,6 +267,7 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
         <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Sauver en PNG auto-nommé</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Annuler / rétablir</td></tr>
         <tr><td><kbd>Suppr</kbd></td><td>Supprimer l'annotation sélectionnée (renumérotation auto)</td></tr>
+        <tr><td><kbd>Entrée</kbd> / <kbd>Échap</kbd></td><td>Pendant un recadrage : valider / annuler</td></tr>
         <tr><td>Double-clic</td><td>Éditer un texte ou le numéro d'une pastille</td></tr>
       </table>
     </div>
@@ -291,24 +293,25 @@ footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; g
   <section id="telechargement" class="alt">
     <div class="wrap">
       <h2>Téléchargement</h2>
-      <p class="sub">Windows 10/11, 64 bits. Aucun runtime, aucune dépendance.</p>
+      <p class="sub">Windows 10/11 · Ubuntu/Debian (x64) · macOS 11+ (Intel &amp; Apple Silicon). Aucun runtime, aucune dépendance.</p>
       <div class="grid">
         <div class="card">
-          <div class="ic"><svg class="icon"><use href="#i-box"/></svg></div><h3>Installeur MSI</h3>
-          <p>Installation classique : Program Files, raccourci menu Démarrer, désinstallation propre.</p>
+          <div class="ic"><svg class="icon"><use href="#i-box"/></svg></div><h3>Windows</h3>
+          <p>Installeur MSI classique (menu Démarrer, désinstallation propre) — ou l'exe portable en zip, à poser où vous voulez.</p>
           <p class="dl"><a class="btn btn-primary" href="https://github.com/Gnandal/gevshot/releases/latest">GEVSHOT-1.0.1-x64.msi</a></p>
         </div>
         <div class="card">
-          <div class="ic"><svg class="icon"><use href="#i-download"/></svg></div><h3>Exe portable</h3>
-          <p>Un seul fichier de ~10 Mo à poser où vous voulez — clé USB comprise.</p>
-          <p class="dl"><a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot/releases/latest">gevshot.exe</a></p>
+          <div class="ic"><svg class="icon"><use href="#i-download"/></svg></div><h3>Linux</h3>
+          <p>Paquet .deb pour Ubuntu/Debian, entrée de menu incluse — ou tar.gz portable. X11 recommandé.</p>
+          <p class="dl"><a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot/releases/latest">gevshot_1.0.1_amd64.deb</a></p>
         </div>
         <div class="card">
-          <div class="ic"><svg class="icon"><use href="#i-code"/></svg></div><h3>Depuis les sources</h3>
-          <p>Écrit en Rust (egui). Avec la toolchain MSVC installée :</p>
-          <p class="dl"><kbd>cargo build --release</kbd></p>
+          <div class="ic"><svg class="icon"><use href="#i-laptop"/></svg></div><h3>macOS</h3>
+          <p>App universelle (Intel + Apple Silicon). Non signée : clic droit → « Ouvrir » au premier lancement.</p>
+          <p class="dl"><a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot/releases/latest">GEVSHOT.app (zip)</a></p>
         </div>
       </div>
+      <p class="sub" style="margin:28px 0 0">Ou depuis les sources, écrit en Rust (egui) : <kbd>cargo build --release</kbd> — voir le <a href="https://github.com/Gnandal/gevshot#développement">README</a> pour les prérequis par plateforme.</p>
     </div>
   </section>
 </main>

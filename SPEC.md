@@ -28,6 +28,9 @@ Boucle cible : capturer → annoter → exporter, en moins de 30 secondes.
    - **Flèche** : glisser du départ vers la cible, tête à l'arrivée.
    - **Rectangle** : glisser pour encadrer.
    - **Ellipse** : glisser pour encercler.
+   - **Texte** : étiquette libre (police, taille, gras). *(ajouté post-v1)*
+   - **Recadrer** : glisser la zone à conserver, Entrée pour valider ;
+     les annotations hors zone sont supprimées, pastilles renumérotées. *(ajouté post-v1)*
    - Couleur (rouge par défaut) + épaisseur du trait.
    - Undo/Redo (Ctrl+Z / Ctrl+Y).
 4. Export :
@@ -59,11 +62,11 @@ Boucle cible : capturer → annoter → exporter, en moins de 30 secondes.
 
 ## Hors périmètre v1 (candidats v2)
 
-- Texte libre, flou/pixelisation, surligneur
-- Capture fenêtre active, capture différée (minuteur)
+- ~~Texte libre~~ *(livré)*, flou/pixelisation, surligneur
+- ~~Capture fenêtre active, capture différée (minuteur)~~ *(livré)*
 - Multi-écrans avancé (v1 : écran principal)
 - Historique/galerie des captures
-- Linux/macOS
+- ~~Linux/macOS~~ *(bundles .deb / .app construits par la CI depuis la 1.0.1)*
 
 ## Jalons
 
