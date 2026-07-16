@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEVSHOT — Capture d'écran annotée pour documenter vos logiciels</title>
+<meta name="description" content="GEVSHOT : capturez, annotez (numéros, flèches, cadres, texte), générez la légende — et documentez vos logiciels en moins de 30 secondes. Windows, gratuit, open source.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='2' y='2' width='96' height='96' rx='21' fill='%231D4ED8'/%3E%3Crect x='16' y='34' width='68' height='42' rx='7' fill='%23fff'/%3E%3Crect x='36' y='24' width='28' height='14' rx='5' fill='%23fff'/%3E%3Ccircle cx='50' cy='55' r='15.5' fill='%231D4ED8'/%3E%3Ccircle cx='50' cy='55' r='8.5' fill='%23D9E6FA'/%3E%3Ccircle cx='73.5' cy='41.5' r='3.8' fill='%23E02828'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #FBFAFD;
+  --bg-soft: #F3F1F9;
+  --card: #FFFFFF;
+  --accent: #1D4ED8;
+  --accent-soft: #E7EEFB;
+  --text: #23262E;
+  --text-weak: #6E727D;
+  --border: #E6E3EE;
+  --red: #C6302C;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1020px; margin: 0 auto; padding: 0 28px; }
+a { color: var(--accent); text-decoration: none; }
+
+/* Icônes SVG au trait */
+.icon { width: 26px; height: 26px; stroke: var(--accent); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.icon text { fill: var(--accent); stroke: none; font: 700 9.5px "Segoe UI", sans-serif; }
+
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(251, 250, 253, .86);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+nav { display: flex; align-items: center; gap: 24px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .08em; font-size: 15px; color: var(--text); }
+.brand svg { width: 26px; height: 26px; }
+nav .links { margin-left: auto; display: flex; gap: 28px; font-size: 14px; }
+nav .links a { color: var(--text-weak); }
+nav .links a:hover { color: var(--accent); }
+
+.hero { padding: 104px 0 96px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 64px; align-items: center; }
+.hero h1 { font-size: 42px; line-height: 1.14; letter-spacing: -.015em; font-weight: 700; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p.lead { margin: 22px 0 34px; font-size: 17px; color: var(--text-weak); max-width: 44ch; }
+.cta { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 26px; border-radius: 26px; font-weight: 600; font-size: 15px;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #1a45c0; }
+.btn-ghost { border-color: var(--border); color: var(--text); background: var(--card); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.hero .note { margin-top: 16px; font-size: 13px; color: var(--text-weak); }
+
+/* Maquette de l'éditeur */
+.mock { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; font-size: 12px; box-shadow: 0 24px 60px -30px rgba(35, 38, 46, .25); }
+.mock .titlebar { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-weak); font-size: 11px; }
+.mock .titlebar .dots { margin-left: auto; }
+.mock .titlebar .dots span { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--border); margin-left: 5px; }
+.mock .toolbar { display: flex; align-items: center; gap: 9px; padding: 9px 14px; border-bottom: 1px solid var(--border); }
+.mock .tool { width: 26px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: var(--text-weak); }
+.mock .tool.active { background: var(--accent-soft); color: var(--accent); }
+.mock .tool svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+.mock .sw { width: 13px; height: 13px; border-radius: 50%; }
+.mock .pill { margin-left: auto; background: var(--accent); color: #fff; border-radius: 12px; padding: 3px 14px; font-weight: 600; font-size: 11px; }
+.mock .canvas { position: relative; background: var(--bg-soft); padding: 20px; }
+.mock .fakeui { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.mock .fakeui .row { height: 11px; border-radius: 6px; background: var(--bg-soft); margin: 11px 0; }
+.mock .fakeui .row.w60 { width: 60%; }
+.mock .fakeui .row.w40 { width: 40%; }
+.mock .fakeui .btnrow { display: flex; gap: 8px; margin-top: 16px; }
+.mock .fakeui .fakebtn { height: 22px; width: 86px; border-radius: 6px; background: var(--accent-soft); }
+.mock .fakeui .fakebtn.primary { background: var(--accent); }
+.mbadge {
+  position: absolute; width: 23px; height: 23px; border-radius: 50%;
+  background: var(--red); color: #fff; font-weight: 700; font-size: 11px;
+  display: grid; place-items: center; border: 2px solid #fff;
+}
+.mock svg.annot { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mock .statusbar { display: flex; justify-content: space-between; padding: 7px 14px; border-top: 1px solid var(--border); color: var(--text-weak); font-size: 11px; }
+
+section { padding: 96px 0; }
+section.alt { background: var(--bg-soft); }
+h2 { font-size: 27px; letter-spacing: -.01em; margin-bottom: 10px; }
+.sub { color: var(--text-weak); margin-bottom: 48px; max-width: 60ch; }
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.grid.two { grid-template-columns: repeat(2, 1fr); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 30px 28px; }
+.card .ic {
+  width: 46px; height: 46px; border-radius: 12px; background: var(--accent-soft);
+  display: grid; place-items: center; margin-bottom: 18px;
+}
+.card h3 { font-size: 16px; margin-bottom: 8px; font-weight: 600; }
+.card p { font-size: 14px; color: var(--text-weak); }
+.card .dl { margin-top: 20px; }
+
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+th, td { text-align: left; padding: 14px 22px; font-size: 14px; }
+th { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+tr + tr td { border-top: 1px solid var(--border); }
+kbd {
+  font-family: Consolas, monospace; font-size: 12px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-bottom-width: 2px; border-radius: 6px; padding: 2px 8px;
+}
+
+.steps { counter-reset: step; display: grid; gap: 26px; max-width: 680px; }
+.step { display: flex; gap: 18px; }
+.step::before {
+  counter-increment: step; content: counter(step);
+  flex: none; width: 27px; height: 27px; border-radius: 50%;
+  background: var(--red); color: #fff; font-weight: 700; font-size: 13px;
+  display: grid; place-items: center; margin-top: 2px;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px var(--border);
+}
+.step p { font-size: 15px; color: var(--text-weak); }
+.step p strong { display: block; color: var(--text); margin-bottom: 2px; }
+
+footer { padding: 48px 0; border-top: 1px solid var(--border); color: var(--text-weak); font-size: 13px; }
+footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+@media (max-width: 840px) {
+  .hero { grid-template-columns: 1fr; padding: 64px 0; gap: 48px; }
+  .hero h1 { font-size: 33px; }
+  .grid, .grid.two { grid-template-columns: 1fr; }
+  section { padding: 64px 0; }
+  nav .links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Bibliothèque d'icônes au trait -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-badge" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><text x="12" y="15.4" text-anchor="middle">1</text></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M6 18 L17 7 M17 7 h-7 M17 7 v7"/></symbol>
+    <symbol id="i-legend" viewBox="0 0 24 24"><path d="M9 6h11 M9 12h11 M9 18h11"/><circle cx="4.5" cy="6" r="1.4"/><circle cx="4.5" cy="12" r="1.4"/><circle cx="4.5" cy="18" r="1.4"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M11 4 L12.8 9.2 L18 11 L12.8 12.8 L11 18 L9.2 12.8 L4 11 L9.2 9.2 Z"/><path d="M18.5 16.5 v4 M16.5 18.5 h4"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M7 3.5 h7 l4 4 V20.5 h-11 Z"/><path d="M14 3.5 v4 h4"/><path d="M9.5 13 h5 M9.5 16.5 h5"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3.5 L6 13.5 h5 L10.5 20.5 L18 10.5 h-5 Z"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M4 8 L12 4 L20 8 V16.5 L12 20.5 L4 16.5 Z"/><path d="M4 8 L12 12 L20 8 M12 12 V20.5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4 v11 M7.5 11 L12 15.5 L16.5 11 M5 19.5 h14"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="M8.5 7 L4 12 L8.5 17 M15.5 7 L20 12 L15.5 17"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6 h16 v11 h-9 l-4.5 3.5 V17 H4 Z"/><path d="M8 10.5 h8 M8 13.5 h5"/></symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <span class="brand">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="2" y="2" width="96" height="96" rx="21" fill="#1D4ED8"/><rect x="16" y="34" width="68" height="42" rx="7" fill="#fff"/><rect x="36" y="24" width="28" height="14" rx="5" fill="#fff"/><circle cx="50" cy="55" r="15.5" fill="#1D4ED8"/><circle cx="50" cy="55" r="8.5" fill="#D9E6FA"/><circle cx="73.5" cy="41.5" r="3.8" fill="#E02828"/></svg>
+        GEVSHOT
+      </span>
+      <span class="links">
+        <a href="#fonctionnalites">Fonctionnalités</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#raccourcis">Raccourcis</a>
+        <a href="#ia">IA</a>
+        <a href="#telechargement">Téléchargement</a>
+        <a href="https://github.com/Gnandal/gevshot">GitHub</a>
+      </span>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <h1>Capturez. Annotez.<br><em>Documentez.</em></h1>
+        <p class="lead">
+          L'outil de capture d'écran pensé pour la documentation logicielle :
+          pastilles numérotées, flèches, cadres, légende Markdown et annotation
+          par IA — en moins de 30 secondes, d'un simple
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://github.com/Gnandal/gevshot/releases/latest">Télécharger</a>
+          <a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot">Code source</a>
+        </div>
+        <p class="note">Windows 10/11 · gratuit · binaire autonome de ~10 Mo, aucun runtime requis</p>
+      </div>
+
+      <div class="mock" role="img" aria-label="Aperçu de l'éditeur GEVSHOT">
+        <div class="titlebar">GEVSHOT — capture-2026-07-16-003 <span class="dots"><span></span><span></span><span></span></span></div>
+        <div class="toolbar">
+          <span class="tool"><svg viewBox="0 0 24 24"><path d="M7 4 L7 18 L11 14 L13.5 19 L16 18 L13.5 13 L18 13 Z"/></svg></span>
+          <span class="tool"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg></span>
+          <span class="tool active"><svg viewBox="0 0 24 24"><path d="M6 18 L17 7 M17 7 h-6 M17 7 v6"/></svg></span>
+          <span class="tool"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10" rx="1.5"/></svg></span>
+          <span class="tool"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="7.5" ry="6"/></svg></span>
+          <span class="sw" style="background:#C6302C"></span>
+          <span class="sw" style="background:#1A73E8"></span>
+          <span class="sw" style="background:#F59117"></span>
+          <span class="pill">Sauver</span>
+        </div>
+        <div class="canvas">
+          <div class="fakeui">
+            <div class="row w40"></div>
+            <div class="row"></div>
+            <div class="row w60"></div>
+            <div class="btnrow"><span class="fakebtn"></span><span class="fakebtn primary"></span></div>
+          </div>
+          <span class="mbadge" style="top:28px;left:28px">1</span>
+          <span class="mbadge" style="top:78px;left:56%">2</span>
+          <svg class="annot" viewBox="0 0 400 180" preserveAspectRatio="none">
+            <path d="M 330 32 L 260 124" stroke="#F59117" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M 260 124 L 264 108 M 260 124 L 276 120" stroke="#F59117" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <rect x="120" y="122" width="122" height="34" rx="4" fill="none" stroke="#C6302C" stroke-width="2.5"/>
+          </svg>
+        </div>
+        <div class="statusbar"><span>860 × 560 px · 100 %</span><span>3 annotations</span></div>
+      </div>
+    </div>
+  </div>
+
+  <section id="fonctionnalites" class="alt">
+    <div class="wrap">
+      <h2>Tout ce qu'il faut pour une doc claire</h2>
+      <p class="sub">Des annotations vectorielles, toujours éditables — rien n'est gravé dans l'image avant l'export.</p>
+      <div class="grid">
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-badge"/></svg></div><h3>Numérotation intelligente</h3><p>Pastilles auto-incrémentées, insertion au milieu d'une séquence, renumérotation en ordre de lecture, numéro de départ configurable.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-arrow"/></svg></div><h3>Flèches, cadres, texte</h3><p>Pointez, encadrez, encerclez, étiquetez. Couleurs et épaisseurs au clic, police au choix — tout reste déplaçable et annulable.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-legend"/></svg></div><h3>Légende exportable</h3><p>Un texte par pastille dans un panneau dédié, copié en Markdown numéroté — prêt à coller sous l'image dans votre wiki.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-sparkle"/></svg></div><h3>Assisté par IA</h3><p>Générez le texte des étapes depuis l'image annotée, ou décrivez ce qu'il faut annoter et laissez l'IA poser les repères.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-file"/></svg></div><h3>Format projet .gev</h3><p>Image et annotations dans un fichier rouvrable. Le logiciel évolue ? Recapturez le fond en conservant vos annotations.</p></div>
+        <div class="card"><div class="ic"><svg class="icon"><use href="#i-bolt"/></svg></div><h3>Toujours prêt</h3><p>Vit dans la barre système, se déclenche par raccourci global, exporte en un geste : presse-papiers ou PNG auto-nommé.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="workflow">
+    <div class="wrap">
+      <h2>Le workflow, en 30 secondes</h2>
+      <p class="sub">Conçu pour la boucle capture → annotation → doc, répétée des dizaines de fois par guide.</p>
+      <div class="steps">
+        <div class="step"><p><strong>Capturez</strong><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> fige l'écran : tracez une région — ou choisissez écran entier, fenêtre active, fenêtre au choix, capture différée.</p></div>
+        <div class="step"><p><strong>Annotez</strong>Pastilles numérotées, flèches, cadres, ellipses, texte — toujours repositionnables.</p></div>
+        <div class="step"><p><strong>Légendez</strong>Un texte par étape, à la main ou généré par IA, copié en Markdown d'un clic.</p></div>
+        <div class="step"><p><strong>Exportez</strong><kbd>Ctrl</kbd>+<kbd>C</kbd> vers le presse-papiers, <kbd>Ctrl</kbd>+<kbd>S</kbd> en PNG auto-nommé — et le projet .gev pour les mises à jour futures.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="raccourcis" class="alt">
+    <div class="wrap">
+      <h2>Raccourcis</h2>
+      <p class="sub">Le clavier d'abord — la souris seulement pour dessiner.</p>
+      <table>
+        <tr><th>Raccourci</th><th>Action</th></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd></td><td>Capturer une région (global, même appli masquée)</td></tr>
+        <tr><td><kbd>Entrée</kbd> / <kbd>Échap</kbd></td><td>Pendant la sélection : tout l'écran / annuler</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Copier l'image annotée</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Sauver en PNG auto-nommé</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Annuler / rétablir</td></tr>
+        <tr><td><kbd>Suppr</kbd></td><td>Supprimer l'annotation sélectionnée (renumérotation auto)</td></tr>
+        <tr><td>Double-clic</td><td>Éditer un texte ou le numéro d'une pastille</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="ia">
+    <div class="wrap">
+      <h2>L'IA au service de la doc</h2>
+      <p class="sub">Optionnelle, avec votre clé API Anthropic (Paramètres → IA). Quelques centimes par capture.</p>
+      <div class="grid two">
+        <div class="card">
+          <div class="ic"><svg class="icon"><use href="#i-sparkle"/></svg></div><h3>Générer la légende</h3>
+          <p>Posez vos pastilles, cliquez « Générer par IA » : le modèle lit l'image annotée et rédige chaque étape en français, style guide utilisateur. Vous relisez, ajustez, copiez en Markdown.</p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg class="icon"><use href="#i-chat"/></svg></div><h3>Annoter sur instruction</h3>
+          <p>« Entoure le bouton Enregistrer et numérote les champs du formulaire » — l'IA pose des annotations positionnées, insérées comme des objets éditables : recalez, supprimez, annulez.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="telechargement" class="alt">
+    <div class="wrap">
+      <h2>Téléchargement</h2>
+      <p class="sub">Windows 10/11, 64 bits. Aucun runtime, aucune dépendance.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="ic"><svg class="icon"><use href="#i-box"/></svg></div><h3>Installeur MSI</h3>
+          <p>Installation classique : Program Files, raccourci menu Démarrer, désinstallation propre.</p>
+          <p class="dl"><a class="btn btn-primary" href="https://github.com/Gnandal/gevshot/releases/latest">GEVSHOT-0.1.0-x64.msi</a></p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg class="icon"><use href="#i-download"/></svg></div><h3>Exe portable</h3>
+          <p>Un seul fichier de ~10 Mo à poser où vous voulez — clé USB comprise.</p>
+          <p class="dl"><a class="btn btn-ghost" href="https://github.com/Gnandal/gevshot/releases/latest">gevshot.exe</a></p>
+        </div>
+        <div class="card">
+          <div class="ic"><svg class="icon"><use href="#i-code"/></svg></div><h3>Depuis les sources</h3>
+          <p>Écrit en Rust (egui). Avec la toolchain MSVC installée :</p>
+          <p class="dl"><kbd>cargo build --release</kbd></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>GEVSHOT — capture d'écran annotée pour la documentation logicielle.</span>
+    <span><a href="https://github.com/Gnandal/gevshot">GitHub</a> · <a href="https://github.com/Gnandal/gevshot/issues">Signaler un problème</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

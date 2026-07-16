@@ -91,11 +91,11 @@ pub struct CanvasTransform {
 }
 
 impl CanvasTransform {
-    pub fn to_screen(&self, p: Pos2) -> Pos2 {
+    pub fn to_screen(self, p: Pos2) -> Pos2 {
         self.origin + p.to_vec2() * self.scale
     }
 
-    pub fn to_image(&self, p: Pos2) -> Pos2 {
+    pub fn to_image(self, p: Pos2) -> Pos2 {
         ((p - self.origin) / self.scale).to_pos2()
     }
 }

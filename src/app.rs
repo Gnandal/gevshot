@@ -172,9 +172,9 @@ impl eframe::App for GevshotApp {
         // Taille par défaut : 6/8 de la largeur et 2/3 de la hauteur de
         // l'écran, fenêtre centrée. Fait dès que la taille du moniteur est
         // connue, hors sélection plein écran pour ne pas gêner l'overlay.
-        if !self.positioned && !matches!(self.stage, Stage::Selecting { .. }) {
-            if let Some(monitor) = ctx.input(|i| i.viewport().monitor_size) {
-                if monitor.x > 0.0 && monitor.y > 0.0 {
+        if !self.positioned && !matches!(self.stage, Stage::Selecting { .. })
+            && let Some(monitor) = ctx.input(|i| i.viewport().monitor_size)
+                && monitor.x > 0.0 && monitor.y > 0.0 {
                     let h = monitor.y * 2.0 / 3.0;
                     let w = monitor.x * 6.0 / 8.0;
                     ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(egui::vec2(w, h)));
@@ -184,8 +184,6 @@ impl eframe::App for GevshotApp {
                     )));
                     self.positioned = true;
                 }
-            }
-        }
 
         self.poll_integrations(ctx);
         self.poll_ai();
@@ -829,15 +827,14 @@ impl GevshotApp {
                 }
             }
         }
-        if let Ok(ev) = GlobalHotKeyEvent::receiver().try_recv() {
-            if Some(ev.id()) == self.hotkey_id
+        if let Ok(ev) = GlobalHotKeyEvent::receiver().try_recv()
+            && Some(ev.id()) == self.hotkey_id
                 && ev.state() == HotKeyState::Pressed
                 && self.pending_capture.is_none()
                 && !matches!(self.stage, Stage::Selecting { .. })
             {
                 self.start_capture(ctx);
             }
-        }
     }
 
     // ----- Capture ----------------------------------------------------------
@@ -947,11 +944,10 @@ impl GevshotApp {
                 if let Some(p) = response.interact_pointer_pos() {
                     if response.drag_started() {
                         self.selection = Some((p, p));
-                    } else if response.dragged() {
-                        if let Some((_, cur)) = &mut self.selection {
+                    } else if response.dragged()
+                        && let Some((_, cur)) = &mut self.selection {
                             *cur = p;
                         }
-                    }
                 }
 
                 let sel_rect = self.selection.map(|(a, b)| egui::Rect::from_two_pos(a, b));
@@ -1003,8 +999,8 @@ impl GevshotApp {
 
                 draw_hint_pill(painter, rect);
 
-                if response.drag_stopped() {
-                    if let Some((a, b)) = self.selection.take() {
+                if response.drag_stopped()
+                    && let Some((a, b)) = self.selection.take() {
                         let sel = egui::Rect::from_two_pos(a, b).intersect(rect);
                         if sel.width() >= 5.0 && sel.height() >= 5.0 {
                             // Conversion écran → pixels image.
@@ -1016,7 +1012,6 @@ impl GevshotApp {
                             committed = Some(Some(img_rect));
                         }
                     }
-                }
 
                 response.on_hover_cursor(egui::CursorIcon::Crosshair);
             });
@@ -1027,12 +1022,11 @@ impl GevshotApp {
     }
 
     fn cancel_selection(&mut self, ctx: &egui::Context) {
-        if let Stage::Selecting { prev, .. } = std::mem::replace(&mut self.stage, Stage::Empty) {
-            if let Some(capture) = prev {
+        if let Stage::Selecting { prev, .. } = std::mem::replace(&mut self.stage, Stage::Empty)
+            && let Some(capture) = prev {
                 // L'éditeur n'a pas été réinitialisé : la session reprend telle quelle.
                 self.stage = Stage::Editing { capture };
             }
-        }
         self.keep_annotations = false;
         self.selection = None;
         restore_window(ctx);

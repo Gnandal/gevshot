@@ -6,6 +6,9 @@ use crate::{theme, widgets};
 /// Tolérance de sélection en pixels écran.
 const HIT_TOLERANCE: f32 = 6.0;
 
+/// Fonction de dessin d'une icône d'outil.
+type ToolIcon = fn(&egui::Painter, Pos2, Color32);
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Tool {
     Select,
@@ -130,7 +133,7 @@ impl Editor {
 
     /// Icônes des outils (toujours visibles).
     pub fn tools_group_ui(&mut self, ui: &mut egui::Ui) {
-        let tools: [(Tool, fn(&egui::Painter, Pos2, Color32), &str); 6] = [
+        let tools: [(Tool, ToolIcon, &str); 6] = [
             (
                 Tool::Select,
                 widgets::icon_select,
@@ -333,15 +336,15 @@ impl Editor {
         }
 
         // Applique le style à l'annotation texte sélectionnée.
-        if changed && selected_text {
-            if let Some(idx) = self.selected {
+        if changed && selected_text
+            && let Some(idx) = self.selected {
                 // Un seul cran d'undo par « rafale » de changements : on
                 // n'empile pas pendant un glissement continu du DragValue.
                 if !size_resp.dragged() || size_resp.drag_started() {
                     self.push_undo();
                 }
-                if let Some(ann) = self.annotations.get_mut(idx) {
-                    if let Shape::Text {
+                if let Some(ann) = self.annotations.get_mut(idx)
+                    && let Shape::Text {
                         size, font, bold, ..
                     } = &mut ann.shape
                     {
@@ -349,9 +352,7 @@ impl Editor {
                         *font = self.text_font;
                         *bold = self.text_bold;
                     }
-                }
             }
-        }
     }
 
     // ----- Légende -------------------------------------------------------------
@@ -452,11 +453,10 @@ impl Editor {
         }
         self.push_undo();
         for ann in &mut self.annotations {
-            if let Shape::Badge { number, label, .. } = &mut ann.shape {
-                if let Some((_, text)) = labels.iter().find(|(n, _)| n == number) {
+            if let Shape::Badge { number, label, .. } = &mut ann.shape
+                && let Some((_, text)) = labels.iter().find(|(n, _)| n == number) {
                     *label = text.clone();
                 }
-            }
         }
     }
 
@@ -539,8 +539,7 @@ impl Editor {
         let avail = ui.available_size();
         let scale = (avail.x / img_size.x)
             .min(avail.y / img_size.y)
-            .min(1.0)
-            .max(0.01);
+            .clamp(0.01, 1.0);
         self.last_scale = scale;
         let (canvas_rect, response) = ui.allocate_exact_size(avail, egui::Sense::click_and_drag());
         let image_rect = Rect::from_center_size(canvas_rect.center(), img_size * scale);
@@ -597,8 +596,8 @@ impl Editor {
             .interact_pointer_pos()
             .map(|p| clamp(t.to_image(p)));
 
-        if response.clicked() {
-            if let Some(p) = pointer {
+        if response.clicked()
+            && let Some(p) = pointer {
                 match self.tool {
                     Tool::Badge => self.place_badge(p),
                     Tool::Select => {
@@ -620,11 +619,10 @@ impl Editor {
                     _ => {}
                 }
             }
-        }
 
-        if response.double_clicked() && self.tool == Tool::Select {
-            if let Some(p) = pointer {
-                if let Some(idx) = self.hit_test(p, t.scale) {
+        if response.double_clicked() && self.tool == Tool::Select
+            && let Some(p) = pointer
+                && let Some(idx) = self.hit_test(p, t.scale) {
                     match self.annotations[idx].shape {
                         Shape::Text { .. } => {
                             self.selected = Some(idx);
@@ -637,11 +635,9 @@ impl Editor {
                         _ => {}
                     }
                 }
-            }
-        }
 
-        if response.drag_started() {
-            if let Some(p) = pointer {
+        if response.drag_started()
+            && let Some(p) = pointer {
                 match self.tool {
                     Tool::Arrow | Tool::Rect | Tool::Ellipse => {
                         self.drag = Some(Drag::Draw {
@@ -663,10 +659,9 @@ impl Editor {
                     Tool::Badge | Tool::Text => {}
                 }
             }
-        }
 
-        if response.dragged() {
-            if let Some(p) = pointer {
+        if response.dragged()
+            && let Some(p) = pointer {
                 match &mut self.drag {
                     Some(Drag::Draw { current, .. }) => *current = p,
                     Some(Drag::Move { last, moved, .. }) => {
@@ -682,18 +677,15 @@ impl Editor {
                     None => {}
                 }
             }
-        }
 
         if response.drag_stopped() {
             match self.drag.take() {
                 Some(Drag::Draw { start, current }) => self.commit_draw(start, current),
-                Some(Drag::Move { before, moved, .. }) => {
-                    if moved {
-                        self.undo_stack.push(before);
-                        self.redo_stack.clear();
-                    }
+                Some(Drag::Move { before, moved: true, .. }) => {
+                    self.undo_stack.push(before);
+                    self.redo_stack.clear();
                 }
-                None => {}
+                _ => {}
             }
         }
     }
@@ -735,11 +727,10 @@ impl Editor {
         let number = match after {
             Some(k) => {
                 for ann in &mut self.annotations {
-                    if let Shape::Badge { number, .. } = &mut ann.shape {
-                        if *number > k {
+                    if let Shape::Badge { number, .. } = &mut ann.shape
+                        && *number > k {
                             *number += 1;
                         }
-                    }
                 }
                 k + 1
             }
@@ -926,13 +917,11 @@ impl Editor {
             });
         if cancel {
             self.editing_badge = None;
-        } else if done {
-            if let Some(edit) = self.editing_badge.take() {
-                if let Ok(n) = edit.buffer.trim().parse::<u32>() {
+        } else if done
+            && let Some(edit) = self.editing_badge.take()
+                && let Ok(n) = edit.buffer.trim().parse::<u32>() {
                     self.set_badge_number(edit.index, n);
                 }
-            }
-        }
     }
 
     fn commit_draw(&mut self, start: Pos2, end: Pos2) {
@@ -1013,8 +1002,8 @@ impl Editor {
 
     fn start_text_edit_existing(&mut self, idx: usize) {
         self.commit_text_edit();
-        if let Some(ann) = self.annotations.get(idx) {
-            if let Shape::Text { text, .. } = &ann.shape {
+        if let Some(ann) = self.annotations.get(idx)
+            && let Shape::Text { text, .. } = &ann.shape {
                 self.editing_text = Some(TextEditState {
                     index: idx,
                     buffer: text.clone(),
@@ -1024,7 +1013,6 @@ impl Editor {
                 });
                 self.sync_text_style_from_selection();
             }
-        }
     }
 
     fn commit_text_edit(&mut self) {
@@ -1039,11 +1027,10 @@ impl Editor {
                     self.annotations.remove(edit.index);
                 }
                 self.undo_stack.pop();
-            } else if let Some(ann) = self.annotations.get_mut(edit.index) {
-                if let Shape::Text { text, .. } = &mut ann.shape {
+            } else if let Some(ann) = self.annotations.get_mut(edit.index)
+                && let Shape::Text { text, .. } = &mut ann.shape {
                     *text = trimmed;
                 }
-            }
         } else if trimmed.is_empty() {
             // Texte vidé : suppression de l'annotation.
             self.push_undo();
@@ -1053,11 +1040,10 @@ impl Editor {
             self.selected = None;
         } else if edit.original.as_deref() != Some(trimmed.as_str()) {
             self.push_undo();
-            if let Some(ann) = self.annotations.get_mut(edit.index) {
-                if let Shape::Text { text, .. } = &mut ann.shape {
+            if let Some(ann) = self.annotations.get_mut(edit.index)
+                && let Shape::Text { text, .. } = &mut ann.shape {
                     *text = trimmed;
                 }
-            }
         }
     }
 
@@ -1129,13 +1115,12 @@ impl Editor {
     }
 
     fn delete_selected(&mut self) {
-        if let Some(idx) = self.selected.take() {
-            if idx < self.annotations.len() {
+        if let Some(idx) = self.selected.take()
+            && idx < self.annotations.len() {
                 self.push_undo();
                 self.annotations.remove(idx);
                 self.renumber_badges();
             }
-        }
     }
 
     fn renumber_badges(&mut self) {

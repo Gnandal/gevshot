@@ -62,8 +62,10 @@ pub fn flatten(image: &image::RgbaImage, annotations: &[Annotation]) -> image::R
 }
 
 fn draw_annotation(pixmap: &mut Pixmap, ann: &Annotation) {
-    let mut paint = Paint::default();
-    paint.anti_alias = true;
+    let mut paint = Paint {
+        anti_alias: true,
+        ..Paint::default()
+    };
     paint.set_color_rgba8(ann.color.r(), ann.color.g(), ann.color.b(), 255);
     let stroke = Stroke {
         width: ann.stroke_width,
@@ -82,8 +84,10 @@ fn draw_annotation(pixmap: &mut Pixmap, ann: &Annotation) {
             if let Some(path) = pb.finish() {
                 pixmap.fill_path(&path, &paint, FillRule::Winding, identity, None);
                 if *bordered {
-                    let mut white = Paint::default();
-                    white.anti_alias = true;
+                    let mut white = Paint {
+                        anti_alias: true,
+                        ..Paint::default()
+                    };
                     white.set_color_rgba8(255, 255, 255, 255);
                     let ring = Stroke {
                         width: 1.5,

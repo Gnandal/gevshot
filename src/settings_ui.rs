@@ -140,11 +140,10 @@ fn save(ui: &mut egui::Ui, s: &mut Settings) {
             .show(ui, |ui| {
                 ui.monospace(current.display().to_string());
             });
-        if ui.button("Parcourir…").clicked() {
-            if let Some(dir) = rfd::FileDialog::new().set_directory(&current).pick_folder() {
+        if ui.button("Parcourir…").clicked()
+            && let Some(dir) = rfd::FileDialog::new().set_directory(&current).pick_folder() {
                 s.save_dir = Some(dir);
             }
-        }
     });
     if s.save_dir.is_some() {
         ui.add_space(4.0);

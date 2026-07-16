@@ -29,8 +29,10 @@ fn circle_path(cx: f32, cy: f32, r: f32) -> tiny_skia::Path {
 }
 
 fn fill(pm: &mut Pixmap, path: &tiny_skia::Path, rgb: (u8, u8, u8)) {
-    let mut paint = Paint::default();
-    paint.anti_alias = true;
+    let mut paint = Paint {
+        anti_alias: true,
+        ..Paint::default()
+    };
     paint.set_color_rgba8(rgb.0, rgb.1, rgb.2, 255);
     pm.fill_path(path, &paint, FillRule::Winding, Transform::identity(), None);
 }

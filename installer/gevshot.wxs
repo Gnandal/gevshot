@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Installeur MSI de GEVSHOT (WiX v4+).
+     Compilation :
+       wix build installer\gevshot.wxs -arch x64 ^
+         -d ExePath=target\release\gevshot.exe -d IcoPath=<chemin .ico> ^
+         -o target\wix\GEVSHOT-x64.msi
+     L'UpgradeCode est fixe : ne pas le changer, il permet aux futures
+     versions de remplacer proprement l'ancienne. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="GEVSHOT"
+           Manufacturer="GEVSHOT"
+           Version="0.1.0"
+           Language="1036"
+           Scope="perMachine"
+           UpgradeCode="C24FB8D7-87F2-4031-99CB-D8BA342D089B">
+
+    <SummaryInformation Description="GEVSHOT — capture d'écran annotée" />
+    <MajorUpgrade DowngradeErrorMessage="Une version plus récente de GEVSHOT est déjà installée." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="GevshotIcon" SourceFile="$(var.IcoPath)" />
+    <Property Id="ARPPRODUCTICON" Value="GevshotIcon" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="GEVSHOT">
+        <Component Id="MainExe">
+          <File Id="GevshotExe" Source="$(var.ExePath)" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcut">
+        <Shortcut Id="AppShortcut"
+                  Name="GEVSHOT"
+                  Description="Capture d'écran annotée"
+                  Target="[INSTALLFOLDER]gevshot.exe"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="GevshotIcon" />
+        <RegistryValue Root="HKMU" Key="Software\GEVSHOT" Name="installed"
+                       Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="Main" Level="1">
+      <ComponentRef Id="MainExe" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>
