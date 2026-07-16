@@ -102,26 +102,8 @@ impl Tray {
     }
 }
 
-/// Icône 32×32 générée en mémoire : disque rouge avec anneau blanc (objectif).
+/// Icône de la barre système : la même que celle de l'application.
 fn make_icon() -> Icon {
-    const S: i32 = 32;
-    let mut rgba = Vec::with_capacity((S * S * 4) as usize);
-    for y in 0..S {
-        for x in 0..S {
-            let dx = x as f32 - 15.5;
-            let dy = y as f32 - 15.5;
-            let d = (dx * dx + dy * dy).sqrt();
-            let px: [u8; 4] = if d <= 14.0 {
-                if (6.0..=9.0).contains(&d) {
-                    [255, 255, 255, 255]
-                } else {
-                    [224, 40, 40, 255]
-                }
-            } else {
-                [0, 0, 0, 0]
-            };
-            rgba.extend_from_slice(&px);
-        }
-    }
-    Icon::from_rgba(rgba, S as u32, S as u32).expect("icône générée invalide")
+    const S: u32 = 32;
+    Icon::from_rgba(crate::appicon::icon_rgba(S), S, S).expect("icône générée invalide")
 }

@@ -3,6 +3,7 @@
 mod ai;
 mod annotation;
 mod app;
+mod appicon;
 mod capture;
 mod config;
 mod editor;
@@ -22,6 +23,11 @@ fn main() -> eframe::Result {
             .with_inner_size([1280.0, 820.0])
             .with_min_inner_size([640.0, 480.0])
             .with_title("GEVSHOT")
+            .with_icon(egui::IconData {
+                rgba: appicon::icon_rgba(64),
+                width: 64,
+                height: 64,
+            })
             // Démarrage silencieux : l'appli vit dans la barre système,
             // la fenêtre n'apparaît qu'après une capture.
             .with_visible(false),
