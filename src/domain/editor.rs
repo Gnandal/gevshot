@@ -754,8 +754,16 @@ impl Editor {
             }
         }
 
+        // Point de départ d'un tracé : à l'instant où egui reconnaît le
+        // glisser (après un seuil de quelques pixels), le curseur a déjà
+        // bougé — on repart de la position d'appui réelle du bouton.
+        let press_origin = response
+            .ctx
+            .input(|i| i.pointer.press_origin())
+            .map(|p| clamp(t.to_image(p)))
+            .or(pointer);
         if response.drag_started_by(egui::PointerButton::Primary)
-            && let Some(p) = pointer
+            && let Some(p) = press_origin
         {
             match self.tool {
                 Tool::Arrow | Tool::Rect | Tool::Ellipse | Tool::Crop => {
