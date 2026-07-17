@@ -14,6 +14,7 @@ eframe = { version = "0.35.0", default-features = false, features = ["glow", "de
 image.workspace = true
 printpdf = { version = "0.11.2", features = ["png"] }
 rfd = "0.17.2"
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [dev-dependencies]
 emath.workspace = true

@@ -10,7 +10,28 @@ use gev_core::document::{self, Document, Step};
 use gev_core::fonts::FontSet;
 use gev_core::{project, render};
 
-use crate::{pdf, theme};
+use crate::{pdf, pptx, theme};
+
+#[derive(Clone, Copy)]
+enum ExportFormat {
+    Pdf,
+    Pptx,
+}
+
+impl ExportFormat {
+    fn ext(self) -> &'static str {
+        match self {
+            ExportFormat::Pdf => "pdf",
+            ExportFormat::Pptx => "pptx",
+        }
+    }
+    fn label(self) -> &'static str {
+        match self {
+            ExportFormat::Pdf => "PDF",
+            ExportFormat::Pptx => "PPTX",
+        }
+    }
+}
 
 /// Lance l'interface. Un `.gevd` optionnel est ouvert au démarrage.
 pub fn launch(open: Option<PathBuf>) -> ExitCode {
@@ -113,27 +134,34 @@ impl GevstudioApp {
         }
     }
 
-    fn export_pdf(&mut self) {
+    fn export(&mut self, format: ExportFormat) {
         if self.doc.steps.is_empty() {
             self.status = "Rien à exporter : le document est vide.".into();
             return;
         }
-        let default = self
+        let ext = format.ext();
+        let default_name = self
             .path
             .as_ref()
-            .map(|p| p.with_extension("pdf"))
-            .unwrap_or_else(|| PathBuf::from("guide.pdf"));
+            .and_then(|p| p.file_stem())
+            .and_then(|s| s.to_str())
+            .map(|s| format!("{s}.{ext}"))
+            .unwrap_or_else(|| format!("guide.{ext}"));
         let Some(path) = rfd::FileDialog::new()
-            .add_filter("PDF", &["pdf"])
-            .set_file_name(default.file_name().and_then(|s| s.to_str()).unwrap_or("guide.pdf"))
+            .add_filter(format.label(), &[ext])
+            .set_file_name(&default_name)
             .save_file()
         else {
             return;
         };
-        match pdf::build(&self.doc).and_then(|bytes| {
+        let built = match format {
+            ExportFormat::Pdf => pdf::build(&self.doc),
+            ExportFormat::Pptx => pptx::build(&self.doc),
+        };
+        match built.and_then(|bytes| {
             std::fs::write(&path, &bytes).map_err(|e| format!("écriture impossible : {e}"))
         }) {
-            Ok(()) => self.status = format!("PDF exporté : {}", path.display()),
+            Ok(()) => self.status = format!("{} exporté : {}", format.label(), path.display()),
             Err(e) => self.status = format!("Export impossible : {e}"),
         }
     }
@@ -261,7 +289,10 @@ impl GevstudioApp {
             }
             ui.separator();
             if ui.button("Exporter PDF…").clicked() {
-                self.export_pdf();
+                self.export(ExportFormat::Pdf);
+            }
+            if ui.button("Exporter PPTX…").clicked() {
+                self.export(ExportFormat::Pptx);
             }
             ui.separator();
             ui.label("Titre :");

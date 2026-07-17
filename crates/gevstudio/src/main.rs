@@ -13,6 +13,7 @@ use gev_core::document;
 
 mod app;
 mod pdf;
+mod pptx;
 mod theme;
 
 fn main() -> ExitCode {
@@ -73,15 +74,24 @@ fn build(args: &[String]) -> Result<(), String> {
     if doc.steps.is_empty() {
         return Err("le document ne contient aucune étape".into());
     }
-    let bytes = pdf::build(&doc)?;
-    std::fs::write(&output, &bytes).map_err(|e| format!("écriture du PDF impossible : {e}"))?;
+    // Le format de sortie suit l'extension : .pptx → PowerPoint, sinon PDF.
+    let is_pptx = output
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("pptx"));
+    let (bytes, kind) = if is_pptx {
+        (pptx::build(&doc)?, "PPTX")
+    } else {
+        (pdf::build(&doc)?, "PDF")
+    };
+    std::fs::write(&output, &bytes)
+        .map_err(|e| format!("écriture du fichier impossible : {e}"))?;
     let title = if doc.title.is_empty() {
         "(sans titre)"
     } else {
         &doc.title
     };
     println!(
-        "« {title} » — {} étape(s) → {} ({} Ko)",
+        "« {title} » — {} étape(s) → {} [{kind}] ({} Ko)",
         doc.steps.len(),
         output.display(),
         bytes.len() / 1024
