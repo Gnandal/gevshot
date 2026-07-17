@@ -40,6 +40,9 @@ Capture → annote → exporte, en moins de 30 secondes.
 | `Échap` (sélection) | Annuler la capture |
 | `Entrée` (sélection) | Capturer tout l'écran |
 | `Entrée` / `Échap` (recadrage) | Valider / annuler le recadrage |
+| `Ctrl+molette` | Zoomer (ancré sur le curseur) |
+| Molette / glisser bouton milieu | Déplacer la vue zoomée |
+| `Ctrl+0` | Réajuster l'image à la fenêtre |
 
 ## Installation
 

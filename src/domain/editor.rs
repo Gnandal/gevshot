@@ -73,6 +73,10 @@ pub struct Editor {
     pending_crop: Option<Rect>,
     /// Recadrage confirmé, à consommer par l'application.
     crop_request: Option<Rect>,
+    /// Échelle choisie par l'utilisateur (None = ajustée à la fenêtre).
+    zoom: Option<f32>,
+    /// Décalage de vue en pixels écran (zoom/défilement).
+    pan: Vec2,
 }
 
 impl Default for Editor {
@@ -96,9 +100,17 @@ impl Default for Editor {
             badge_border: true,
             pending_crop: None,
             crop_request: None,
+            zoom: None,
+            pan: Vec2::ZERO,
         }
     }
 }
+
+/// Bornes du zoom manuel.
+const ZOOM_MIN: f32 = 0.05;
+const ZOOM_MAX: f32 = 8.0;
+/// Marge d'image devant rester visible dans le canevas (pixels écran).
+const PAN_MARGIN: f32 = 60.0;
 
 impl Editor {
     /// Réinitialise l'éditeur pour une nouvelle capture (conserve couleur et épaisseur).
@@ -112,6 +124,8 @@ impl Editor {
         self.editing_badge = None;
         self.pending_crop = None;
         self.crop_request = None;
+        self.zoom = None;
+        self.pan = Vec2::ZERO;
     }
 
     pub fn annotations(&self) -> &[Annotation] {
@@ -587,18 +601,62 @@ impl Editor {
         self.editing_text = None;
         self.editing_badge = None;
         self.tool = Tool::Select;
+        // Les dimensions ont changé : on repart de la vue ajustée.
+        self.zoom = None;
+        self.pan = Vec2::ZERO;
         removed
     }
 
     /// Affiche l'image et gère le dessin/la sélection des annotations.
     pub fn canvas(&mut self, ui: &mut egui::Ui, texture: &egui::TextureHandle, img_size: Vec2) {
         let avail = ui.available_size();
-        let scale = (avail.x / img_size.x)
+        let fit_scale = (avail.x / img_size.x)
             .min(avail.y / img_size.y)
             .clamp(0.01, 1.0);
-        self.last_scale = scale;
         let (canvas_rect, response) = ui.allocate_exact_size(avail, egui::Sense::click_and_drag());
-        let image_rect = Rect::from_center_size(canvas_rect.center(), img_size * scale);
+
+        // Zoom (Ctrl+molette / pincement) ancré sur le curseur, molette pour
+        // défiler, glisser au bouton du milieu pour déplacer la vue.
+        let mut scale = self.zoom.unwrap_or(fit_scale);
+        if let Some(hover) = response.hover_pos() {
+            let (zoom_delta, scroll, ctrl) = ui.ctx().input(|i| {
+                (i.zoom_delta(), i.smooth_scroll_delta, i.modifiers.ctrl)
+            });
+            if zoom_delta != 1.0 {
+                let new_scale = (scale * zoom_delta).clamp(ZOOM_MIN, ZOOM_MAX);
+                // Conserve le point image sous le curseur : décale le pan
+                // du déplacement que le changement d'échelle imprimerait.
+                let old_origin = canvas_rect.center().to_vec2() - img_size * scale / 2.0 + self.pan;
+                let p_img = (hover.to_vec2() - old_origin) / scale;
+                let new_origin = hover.to_vec2() - p_img * new_scale;
+                self.pan = new_origin - (canvas_rect.center().to_vec2() - img_size * new_scale / 2.0);
+                self.zoom = Some(new_scale);
+                scale = new_scale;
+            } else if scroll != Vec2::ZERO && !ctrl {
+                self.pan += scroll;
+            }
+        }
+        if response.dragged_by(egui::PointerButton::Middle) {
+            self.pan += response.drag_delta();
+        }
+        // Zoom ajusté : pas de défilement possible, la vue reste centrée.
+        if self.zoom.is_none() {
+            self.pan = Vec2::ZERO;
+        }
+
+        // Garde au moins un bord de l'image visible dans le canevas.
+        let mut origin = canvas_rect.center() - img_size * scale / 2.0 + self.pan;
+        let margin = PAN_MARGIN.min(img_size.x * scale).min(img_size.y * scale);
+        origin.x = origin
+            .x
+            .clamp(canvas_rect.min.x + margin - img_size.x * scale, canvas_rect.max.x - margin);
+        origin.y = origin
+            .y
+            .clamp(canvas_rect.min.y + margin - img_size.y * scale, canvas_rect.max.y - margin);
+        self.pan = origin - (canvas_rect.center() - img_size * scale / 2.0);
+
+        self.last_scale = scale;
+        let image_rect = Rect::from_min_size(origin, img_size * scale);
         let t = CanvasTransform {
             origin: image_rect.min,
             scale,
@@ -696,7 +754,7 @@ impl Editor {
             }
         }
 
-        if response.drag_started()
+        if response.drag_started_by(egui::PointerButton::Primary)
             && let Some(p) = pointer
         {
             match self.tool {
@@ -721,7 +779,7 @@ impl Editor {
             }
         }
 
-        if response.dragged()
+        if response.dragged_by(egui::PointerButton::Primary)
             && let Some(p) = pointer
         {
             match &mut self.drag {
@@ -740,7 +798,7 @@ impl Editor {
             }
         }
 
-        if response.drag_stopped() {
+        if response.drag_stopped_by(egui::PointerButton::Primary) {
             match self.drag.take() {
                 Some(Drag::Draw { start, current }) => self.commit_draw(start, current),
                 Some(Drag::Move {
@@ -760,15 +818,20 @@ impl Editor {
         if ctx.egui_wants_keyboard_input() {
             return;
         }
-        let (undo, redo, delete, enter, escape) = ctx.input(|i| {
+        let (undo, redo, delete, enter, escape, zoom_reset) = ctx.input(|i| {
             (
                 i.modifiers.ctrl && i.key_pressed(egui::Key::Z),
                 i.modifiers.ctrl && i.key_pressed(egui::Key::Y),
                 i.key_pressed(egui::Key::Delete) || i.key_pressed(egui::Key::Backspace),
                 i.key_pressed(egui::Key::Enter),
                 i.key_pressed(egui::Key::Escape),
+                i.modifiers.ctrl && i.key_pressed(egui::Key::Num0),
             )
         });
+        if zoom_reset {
+            self.zoom = None;
+            self.pan = Vec2::ZERO;
+        }
         if self.pending_crop.is_some() {
             if enter {
                 self.crop_request = self.pending_crop.take();
