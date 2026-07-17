@@ -1419,15 +1419,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "gevshot"
+name = "gev-core"
 version = "1.0.2"
 dependencies = [
  "ab_glyph",
+ "base64",
+ "ecolor",
+ "emath",
+ "image",
+ "serde",
+ "serde_json",
+ "tiny-skia",
+]
+
+[[package]]
+name = "gevshot"
+version = "1.0.2"
+dependencies = [
  "arboard",
  "base64",
  "chrono",
  "dirs",
  "eframe",
+ "gev-core",
  "global-hotkey",
  "image",
  "rfd",

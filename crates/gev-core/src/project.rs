@@ -2,10 +2,11 @@
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
-use eframe::egui::{Color32, Pos2, Rect, pos2, vec2};
+use ecolor::Color32;
+use emath::{Pos2, Rect, pos2, vec2};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::annotation::{Annotation, FontChoice, Shape};
+use crate::model::{Annotation, FontChoice, Shape};
 
 pub const EXTENSION: &str = "gev";
 const VERSION: u32 = 1;

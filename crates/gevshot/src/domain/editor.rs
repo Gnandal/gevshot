@@ -1,6 +1,8 @@
 use eframe::egui::{self, Color32, CursorIcon, Pos2, Rect, Stroke, Vec2};
 
-use crate::domain::annotation::{Annotation, CanvasTransform, FontChoice, Shape};
+use crate::domain::annotation::{
+    Annotation, CanvasTransform, FontChoice, PaintExt, Shape, family,
+};
 use crate::ui::{theme, widgets};
 
 /// Tolérance de sélection en pixels écran.
@@ -1238,7 +1240,7 @@ impl Editor {
             return;
         };
         let screen_pos = t.to_screen(*pos);
-        let font_id = egui::FontId::new(*size * t.scale, font.family(*bold));
+        let font_id = egui::FontId::new(*size * t.scale, family(*font, *bold));
         let color = ann.color;
 
         let mut commit = false;

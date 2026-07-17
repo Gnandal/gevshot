@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           $ico = (Get-ChildItem "target\release\build\gevshot-*\out\gevshot.ico" | Select-Object -First 1).FullName
-          wix build installer\gevshot.wxs -arch x64 `
+          wix build crates\gevshot\installer\gevshot.wxs -arch x64 `
             -d "Version=${{ steps.version.outputs.value }}" `
             -d "ExePath=target\release\gevshot.exe" `
             -d "IcoPath=$ico" `
@@ -89,7 +89,7 @@ jobs:
         run: cargo build --release
 
       - name: Generate icons
-        run: cargo run --release --example gen_icon -- icons 256 512
+        run: cargo run --release -p gevshot --example gen_icon -- icons 256 512
 
       - name: Build .deb
         run: |
@@ -164,7 +164,7 @@ jobs:
             target/x86_64-apple-darwin/release/gevshot
 
       - name: Generate icons
-        run: cargo run --release --example gen_icon -- icons 16 32 64 128 256 512 1024
+        run: cargo run --release -p gevshot --example gen_icon -- icons 16 32 64 128 256 512 1024
 
       - name: Build .icns
         run: |

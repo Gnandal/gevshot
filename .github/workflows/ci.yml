@@ -24,7 +24,10 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Build
-        run: cargo build
+        run: cargo build --workspace
+
+      - name: Tests
+        run: cargo test --workspace

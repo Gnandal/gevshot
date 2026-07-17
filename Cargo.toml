@@ -1,29 +1,23 @@
-﻿[package]
-name = "gevshot"
+[workspace]
+resolver = "3"
+members = ["crates/gev-core", "crates/gevshot"]
+
+[workspace.package]
 version = "1.0.2"
 edition = "2024"
 
-[dependencies]
+[workspace.dependencies]
+gev-core = { path = "crates/gev-core" }
+# emath/ecolor : mêmes types que ceux ré-exportés par egui — à maintenir
+# sur la même version mineure qu'eframe.
+emath = "0.35"
+ecolor = "0.35"
 ab_glyph = "0.2.32"
-arboard = "3.6.1"
-base64 = "0.22.1"
-chrono = "0.4.45"
-dirs = "6.0.0"
-eframe = { version = "0.35.0", default-features = false, features = ["glow", "default_fonts", "x11", "wayland"] }
-global-hotkey = "0.8.0"
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
-rfd = "0.17.2"
+tiny-skia = "0.12"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
-tiny-skia = "0.12.0"
-tray-icon = "0.24.1"
-ureq = { version = "2", features = ["json"] }
-xcap = "0.9.6"
-
-[build-dependencies]
-winresource = "0.1"
-tiny-skia = "0.12"
-image = { version = "0.25", default-features = false, features = ["ico"] }
+base64 = "0.22.1"
 
 [profile.release]
 lto = true

@@ -7,6 +7,9 @@
 //! - `infra`  : accès système et réseau (capture, fichiers, config, IA…) ;
 //! - `ui`     : thème, widgets et écrans réutilisables ;
 //! - `app`    : orchestration — état global, flux de capture, barres, panneaux.
+//!
+//! Le modèle des annotations, le format `.gev` et l'aplatissement sur
+//! pixels vivent dans la crate partagée `gev-core`.
 
 mod app;
 mod appicon;

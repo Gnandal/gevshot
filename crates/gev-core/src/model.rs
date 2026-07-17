@@ -1,9 +1,13 @@
-﻿use eframe::egui::{
-    self, Align2, Color32, FontId, Pos2, Rect, Stroke, Vec2, emath::Rot2, epaint::EllipseShape,
-};
+//! Modèle des annotations, partagé entre l'éditeur (GEVSHOT), le studio
+//! de documentation (GEVSTUDIO) et le rendu d'export.
+//!
+//! Toutes les coordonnées sont exprimées en pixels de l'image source,
+//! indépendamment du zoom d'affichage. Le rendu écran (egui) vit côté
+//! application ; ici : données et géométrie pures.
 
-/// Toutes les coordonnées sont exprimées en pixels de l'image source,
-/// indépendamment du zoom d'affichage.
+use ecolor::Color32;
+use emath::{Pos2, Rect, Vec2};
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Shape {
     /// Pastille numérotée ; `label` est le texte de l'étape dans la légende
@@ -67,11 +71,6 @@ impl FontChoice {
             _ => FontChoice::Sans,
         }
     }
-
-    /// Famille egui correspondante (enregistrée par `fonts::install`).
-    pub fn family(&self, bold: bool) -> egui::FontFamily {
-        egui::FontFamily::Name(crate::infra::fonts::family_name(*self, bold).into())
-    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -107,90 +106,11 @@ pub fn badge_radius(stroke_width: f32) -> f32 {
 }
 
 /// Longueur de la tête de flèche en pixels image.
-fn arrow_head_len(stroke_width: f32, shaft_len: f32) -> f32 {
+pub fn arrow_head_len(stroke_width: f32, shaft_len: f32) -> f32 {
     (10.0 + stroke_width * 3.0).min(shaft_len * 0.5)
 }
 
 impl Annotation {
-    pub fn paint(&self, painter: &egui::Painter, t: &CanvasTransform) {
-        let stroke = Stroke::new((self.stroke_width * t.scale).max(1.0), self.color);
-        match &self.shape {
-            Shape::Badge {
-                center,
-                number,
-                bordered,
-                ..
-            } => {
-                let c = t.to_screen(*center);
-                let r = badge_radius(self.stroke_width) * t.scale;
-                painter.circle_filled(c, r, self.color);
-                if *bordered {
-                    painter.circle_stroke(
-                        c,
-                        r,
-                        Stroke::new((1.5 * t.scale).max(1.0), Color32::WHITE),
-                    );
-                }
-                painter.text(
-                    c,
-                    Align2::CENTER_CENTER,
-                    number.to_string(),
-                    FontId::proportional((r * 1.2).max(8.0)),
-                    Color32::WHITE,
-                );
-            }
-            Shape::Arrow { from, to } => {
-                let a = t.to_screen(*from);
-                let b = t.to_screen(*to);
-                painter.line_segment([a, b], stroke);
-                let shaft = b - a;
-                let len = shaft.length();
-                if len > 1.0 {
-                    let dir = shaft / len;
-                    let head = arrow_head_len(self.stroke_width, len / t.scale) * t.scale;
-                    for angle in [0.5, -0.5f32] {
-                        let v = Rot2::from_angle(angle) * (-dir * head);
-                        painter.line_segment([b, b + v], stroke);
-                    }
-                }
-            }
-            Shape::Rect { rect } => {
-                let r = Rect::from_min_max(t.to_screen(rect.min), t.to_screen(rect.max));
-                painter.rect_stroke(
-                    r,
-                    egui::CornerRadius::ZERO,
-                    stroke,
-                    egui::StrokeKind::Middle,
-                );
-            }
-            Shape::Ellipse { rect } => {
-                let r = Rect::from_min_max(t.to_screen(rect.min), t.to_screen(rect.max));
-                painter.add(egui::Shape::Ellipse(EllipseShape {
-                    center: r.center(),
-                    radius: r.size() / 2.0,
-                    fill: Color32::TRANSPARENT,
-                    stroke,
-                    angle: 0.0,
-                }));
-            }
-            Shape::Text {
-                pos,
-                text,
-                size,
-                font,
-                bold,
-            } => {
-                painter.text(
-                    t.to_screen(*pos),
-                    Align2::LEFT_TOP,
-                    text,
-                    FontId::new(size * t.scale, font.family(*bold)),
-                    self.color,
-                );
-            }
-        }
-    }
-
     /// Rectangle englobant en coordonnées image (pour l'indicateur de sélection).
     pub fn bounding_rect(&self) -> Rect {
         match &self.shape {

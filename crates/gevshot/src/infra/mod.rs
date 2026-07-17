@@ -7,5 +7,5 @@ pub mod capture;
 pub mod config;
 pub mod export;
 pub mod fonts;
-pub mod project;
+pub use gev_core::project;
 pub mod tray;
