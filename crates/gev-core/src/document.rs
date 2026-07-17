@@ -1,5 +1,5 @@
 //! Document GEVSTUDIO : une séquence d'étapes (capture annotée + titre +
-//! légende) assemblées en un guide pas-à-pas, sérialisée au format `.gevdoc`.
+//! légende) assemblées en un guide pas-à-pas, sérialisée au format `.gevd`.
 //! Le rendu de chaque étape réutilise `render::flatten` ; l'export (PDF,
 //! PPTX…) vit côté application.
 
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::model::Annotation;
 use crate::project::{self, AnnotationData};
 
-pub const EXTENSION: &str = "gevdoc";
+pub const EXTENSION: &str = "gevd";
 const VERSION: u32 = 1;
 
 /// Une étape du guide : la capture, ses annotations, et le texte associé.

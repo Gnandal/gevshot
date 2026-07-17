@@ -1,0 +1,18 @@
+[package]
+name = "gevstudio"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "gevstudio"
+path = "src/main.rs"
+
+[dependencies]
+# Fontes embarquées : rendu déterministe des exports, indépendant de la machine.
+gev-core = { workspace = true, features = ["embedded-fonts"] }
+image.workspace = true
+printpdf = { version = "0.11.2", features = ["png"] }
+
+[dev-dependencies]
+emath.workspace = true
+ecolor.workspace = true

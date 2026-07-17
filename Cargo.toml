@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/gev-core", "crates/gevshot"]
+members = ["crates/gev-core", "crates/gevshot", "crates/gevstudio"]
 
 [workspace.package]
 version = "1.0.2"

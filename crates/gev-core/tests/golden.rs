@@ -74,7 +74,7 @@ fn golden_flatten_embedded_fonts() {
     );
 }
 
-/// Un document `.gevdoc` (deux étapes construites depuis le `.gev` de
+/// Un document `.gevd` (deux étapes construites depuis le `.gev` de
 /// référence) doit se relire à l'identique : titres, légendes, images et
 /// annotations préservés.
 #[test]
@@ -98,7 +98,7 @@ fn gevdoc_round_trip() {
         ],
     };
 
-    let tmp = std::env::temp_dir().join("gev_core_doc_roundtrip.gevdoc");
+    let tmp = std::env::temp_dir().join("gev_core_doc_roundtrip.gevd");
     document::save(&tmp, &doc).expect("écriture");
     let back = document::load(&tmp).expect("relecture");
 
