@@ -3,6 +3,7 @@
 //! Aucune dépendance GUI — uniquement les types math/couleur (`emath`,
 //! `ecolor`, identiques à ceux ré-exportés par egui).
 
+pub mod document;
 pub mod fonts;
 pub mod model;
 pub mod project;

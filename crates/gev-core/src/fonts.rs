@@ -2,8 +2,9 @@
 //!
 //! Deux sources selon la feature : `system-fonts` lit C:\Windows\Fonts
 //! (comportement historique de GEVSHOT — un emplacement introuvable est
-//! simplement sauté au rendu), `embedded-fonts` fournira des fontes OFL
-//! embarquées pour un rendu déterministe multi-plateforme (GEVSTUDIO).
+//! simplement sauté au rendu), `embedded-fonts` embarque les fontes DejaVu
+//! (sans/serif/mono × normal/gras) pour un rendu déterministe
+//! multi-plateforme (GEVSTUDIO). Voir `fonts/LICENSE`.
 
 use ab_glyph::FontVec;
 
@@ -62,6 +63,26 @@ impl FontSet {
             .map(|(_, files)| read_first(files).and_then(slot_from_bytes))
             .collect();
         FontSet { slots }
+    }
+
+    /// Fontes DejaVu embarquées : rendu identique sur toutes les
+    /// plateformes, indépendant des polices installées (GEVSTUDIO, exports).
+    #[cfg(feature = "embedded-fonts")]
+    pub fn embedded() -> FontSet {
+        const EMBEDDED: [&[u8]; 6] = [
+            include_bytes!("../fonts/DejaVuSans.ttf"),
+            include_bytes!("../fonts/DejaVuSans-Bold.ttf"),
+            include_bytes!("../fonts/DejaVuSerif.ttf"),
+            include_bytes!("../fonts/DejaVuSerif-Bold.ttf"),
+            include_bytes!("../fonts/DejaVuSansMono.ttf"),
+            include_bytes!("../fonts/DejaVuSansMono-Bold.ttf"),
+        ];
+        FontSet {
+            slots: EMBEDDED
+                .iter()
+                .map(|b| slot_from_bytes(b.to_vec()))
+                .collect(),
+        }
     }
 
     /// Jeu vide : aucune police, tout texte est sauté au rendu (tests).

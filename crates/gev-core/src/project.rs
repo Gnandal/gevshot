@@ -65,7 +65,7 @@ enum ShapeData {
 }
 
 #[derive(Serialize, Deserialize)]
-struct AnnotationData {
+pub(crate) struct AnnotationData {
     shape: ShapeData,
     color: [u8; 4],
     stroke_width: f32,
@@ -83,13 +83,9 @@ pub fn save(
     image: &image::RgbaImage,
     annotations: &[Annotation],
 ) -> Result<(), String> {
-    let mut png = Vec::new();
-    image
-        .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
-        .map_err(|e| format!("Encodage PNG impossible : {e}"))?;
     let file = ProjectFile {
         version: VERSION,
-        image_png_base64: BASE64.encode(&png),
+        image_png_base64: encode_png(image)?,
         annotations: annotations.iter().map(to_data).collect(),
     };
     let json =
@@ -107,14 +103,30 @@ pub fn load(path: &Path) -> Result<(image::RgbaImage, Vec<Annotation>), String> 
             file.version
         ));
     }
-    let png = BASE64
-        .decode(&file.image_png_base64)
-        .map_err(|e| format!("Image du projet corrompue : {e}"))?;
-    let image = image::load_from_memory(&png)
-        .map_err(|e| format!("Décodage de l'image impossible : {e}"))?
-        .to_rgba8();
+    let image = decode_png(&file.image_png_base64)?;
     let annotations = file.annotations.iter().map(from_data).collect();
     Ok((image, annotations))
+}
+
+// ----- Codec image (partagé avec le format .gevdoc) --------------------------
+
+/// Encode l'image en PNG puis en base64 (image intégrée au JSON).
+pub(crate) fn encode_png(image: &image::RgbaImage) -> Result<String, String> {
+    let mut png = Vec::new();
+    image
+        .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
+        .map_err(|e| format!("Encodage PNG impossible : {e}"))?;
+    Ok(BASE64.encode(&png))
+}
+
+/// Décode une image PNG base64 intégrée au JSON.
+pub(crate) fn decode_png(base64: &str) -> Result<image::RgbaImage, String> {
+    let png = BASE64
+        .decode(base64)
+        .map_err(|e| format!("Image corrompue : {e}"))?;
+    Ok(image::load_from_memory(&png)
+        .map_err(|e| format!("Décodage de l'image impossible : {e}"))?
+        .to_rgba8())
 }
 
 // ----- Conversions -----------------------------------------------------------
@@ -132,7 +144,7 @@ fn rect(r: Rect) -> RectData {
     }
 }
 
-fn to_data(ann: &Annotation) -> AnnotationData {
+pub(crate) fn to_data(ann: &Annotation) -> AnnotationData {
     let shape = match &ann.shape {
         Shape::Badge {
             center,
@@ -172,7 +184,7 @@ fn to_data(ann: &Annotation) -> AnnotationData {
     }
 }
 
-fn from_data(data: &AnnotationData) -> Annotation {
+pub(crate) fn from_data(data: &AnnotationData) -> Annotation {
     let as_pos = |p: &PointData| pos2(p.x, p.y);
     let as_rect =
         |r: &RectData| Rect::from_min_size(pos2(r.x, r.y), vec2(r.w.max(0.0), r.h.max(0.0)));
