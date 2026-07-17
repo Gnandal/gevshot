@@ -1,15 +1,38 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 //! GEVSTUDIO — assemble des captures annotées `.gevd` en documents.
-//! Étape 1 : CLI. `gevstudio build <doc.gevd> -o <sortie.pdf>`.
+//!
+//! Deux modes :
+//! - sans argument : lance l'interface (timeline des étapes, aperçu, export) ;
+//! - `build <doc.gevd> [-o <sortie.pdf>]` : génère un PDF en ligne de commande.
 
 use std::path::PathBuf;
 use std::process::ExitCode;
 
 use gev_core::document;
 
+mod app;
 mod pdf;
+mod theme;
 
 fn main() -> ExitCode {
-    match run(std::env::args().skip(1).collect()) {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        // Mode CLI explicite.
+        Some("build") => cli(build(&args[1..])),
+        Some("-h") | Some("--help") => {
+            println!("{USAGE}");
+            ExitCode::SUCCESS
+        }
+        // Sans argument (ou un chemin) : interface graphique. Un `.gevd`
+        // passé en argument est ouvert au démarrage.
+        None => app::launch(None),
+        Some(_) => app::launch(Some(PathBuf::from(&args[0]))),
+    }
+}
+
+fn cli(result: Result<(), String>) -> ExitCode {
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("erreur : {e}");
@@ -18,16 +41,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(args: Vec<String>) -> Result<(), String> {
-    let cmd = args.first().map(String::as_str);
-    match cmd {
-        Some("build") => build(&args[1..]),
-        Some(other) => Err(format!("commande inconnue « {other} »\n\n{USAGE}")),
-        None => Err(format!("commande manquante\n\n{USAGE}")),
-    }
-}
-
-const USAGE: &str = "Usage :\n  gevstudio build <doc.gevd> [-o <sortie.pdf>]";
+const USAGE: &str = "Usage :\n  gevstudio                        lance l'interface\n  gevstudio <doc.gevd>             ouvre un document dans l'interface\n  gevstudio build <doc.gevd> [-o <sortie.pdf>]   génère un PDF sans interface";
 
 struct BuildArgs {
     input: PathBuf,
