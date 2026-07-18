@@ -35,8 +35,9 @@ fn pt_to_mm(pt: f32) -> f32 {
     pt * 25.4 / 72.0
 }
 
-/// Assemble le document en octets PDF.
-pub fn build(doc: &Document) -> Result<Vec<u8>, String> {
+/// Assemble le document en octets PDF. `watermark` ajoute une mention discrète
+/// en bas de chaque page (version gratuite).
+pub fn build(doc: &Document, watermark: bool) -> Result<Vec<u8>, String> {
     let fonts = FontSet::embedded();
     let regular_bytes = fonts
         .bytes(FontChoice::Sans, false)
@@ -58,7 +59,9 @@ pub fn build(doc: &Document) -> Result<Vec<u8>, String> {
 
     let mut pages = Vec::with_capacity(doc.steps.len());
     for step in &doc.steps {
-        pages.push(build_page(&mut pdf, step, &fonts, &regular_id, &bold_id));
+        pages.push(build_page(
+            &mut pdf, step, &fonts, &regular_id, &bold_id, watermark,
+        ));
     }
 
     let bytes = pdf.with_pages(pages).save(
@@ -81,6 +84,7 @@ fn build_page(
     fonts: &FontSet,
     regular: &FontId,
     bold: &FontId,
+    watermark: bool,
 ) -> PdfPage {
     // Aplatit les annotations sur la capture (le `.gevd` les garde séparées
     // pour rester éditable ; le PDF, lui, est figé).
@@ -142,6 +146,18 @@ fn build_page(
         }
     }
 
+    if watermark {
+        push_text_colored(
+            &mut ops,
+            "Créé avec GEVSTUDIO — version gratuite",
+            regular,
+            8.0,
+            MARGIN,
+            MARGIN / 2.0,
+            gray(),
+        );
+    }
+
     PdfPage::new(Mm(PAGE_W), Mm(PAGE_H), ops)
 }
 
@@ -169,6 +185,19 @@ fn raw_image(img: &image::RgbaImage) -> RawImage {
 }
 
 fn push_text(ops: &mut Vec<Op>, text: &str, font: &FontId, size: f32, x_mm: f32, y_mm: f32) {
+    push_text_colored(ops, text, font, size, x_mm, y_mm, black());
+}
+
+#[allow(clippy::too_many_arguments)]
+fn push_text_colored(
+    ops: &mut Vec<Op>,
+    text: &str,
+    font: &FontId,
+    size: f32,
+    x_mm: f32,
+    y_mm: f32,
+    col: Color,
+) {
     ops.push(Op::StartTextSection);
     ops.push(Op::SetTextCursor {
         pos: Point::new(Mm(x_mm), Mm(y_mm)),
@@ -177,11 +206,20 @@ fn push_text(ops: &mut Vec<Op>, text: &str, font: &FontId, size: f32, x_mm: f32,
         font: PdfFontHandle::External(font.clone()),
         size: Pt(size),
     });
-    ops.push(Op::SetFillColor { col: black() });
+    ops.push(Op::SetFillColor { col });
     ops.push(Op::ShowText {
         items: vec![TextItem::Text(text.to_string())],
     });
     ops.push(Op::EndTextSection);
+}
+
+fn gray() -> Color {
+    Color::Rgb(Rgb {
+        r: 0.62,
+        g: 0.60,
+        b: 0.58,
+        icc_profile: None,
+    })
 }
 
 #[cfg(test)]
@@ -218,7 +256,7 @@ mod tests {
                 sample_step("", ""),
             ],
         };
-        let bytes = build(&doc).expect("génération PDF");
+        let bytes = build(&doc, true).expect("génération PDF");
         assert!(bytes.starts_with(b"%PDF"), "en-tête PDF manquant");
         assert!(bytes.len() > 1000, "PDF suspicieusement petit");
     }

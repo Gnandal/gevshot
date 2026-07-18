@@ -13,6 +13,7 @@ use gev_core::document;
 
 mod app;
 mod gif;
+mod license;
 mod pdf;
 mod pptx;
 mod theme;
@@ -82,10 +83,27 @@ fn build(args: &[String]) -> Result<(), String> {
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase())
         .unwrap_or_default();
+    let pro = license::License::load().is_pro();
+    // PPTX et GIF sont réservés à la version Pro ; le PDF gratuit est filigrané.
+    let pro_only = |kind: &str| {
+        if pro {
+            Ok(())
+        } else {
+            Err(format!(
+                "L'export {kind} est réservé à la version Pro. Activez une licence dans l'application."
+            ))
+        }
+    };
     let (bytes, kind) = match ext.as_str() {
-        "pptx" => (pptx::build(&doc)?, "PPTX"),
-        "gif" => (gif::build(&doc)?, "GIF"),
-        _ => (pdf::build(&doc)?, "PDF"),
+        "pptx" => {
+            pro_only("PPTX")?;
+            (pptx::build(&doc)?, "PPTX")
+        }
+        "gif" => {
+            pro_only("GIF")?;
+            (gif::build(&doc)?, "GIF")
+        }
+        _ => (pdf::build(&doc, !pro)?, "PDF"),
     };
     std::fs::write(&output, &bytes)
         .map_err(|e| format!("écriture du fichier impossible : {e}"))?;

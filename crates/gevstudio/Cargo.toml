@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 # Fontes embarquées : rendu déterministe des exports, indépendant de la machine.
 gev-core = { workspace = true, features = ["embedded-fonts"] }
+dirs = "6.0.0"
 ecolor.workspace = true
 eframe = { version = "0.35.0", default-features = false, features = ["glow", "default_fonts", "x11", "wayland"] }
 image = { workspace = true, features = ["gif"] }

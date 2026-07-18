@@ -1715,6 +1715,7 @@ dependencies = [
 name = "gevstudio"
 version = "1.0.2"
 dependencies = [
+ "dirs",
  "ecolor",
  "eframe",
  "emath",
