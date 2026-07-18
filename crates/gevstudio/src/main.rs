@@ -12,6 +12,7 @@ use std::process::ExitCode;
 use gev_core::document;
 
 mod app;
+mod gif;
 mod pdf;
 mod pptx;
 mod theme;
@@ -74,14 +75,17 @@ fn build(args: &[String]) -> Result<(), String> {
     if doc.steps.is_empty() {
         return Err("le document ne contient aucune étape".into());
     }
-    // Le format de sortie suit l'extension : .pptx → PowerPoint, sinon PDF.
-    let is_pptx = output
+    // Le format de sortie suit l'extension : .pptx → PowerPoint, .gif → GIF
+    // animé, sinon PDF.
+    let ext = output
         .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("pptx"));
-    let (bytes, kind) = if is_pptx {
-        (pptx::build(&doc)?, "PPTX")
-    } else {
-        (pdf::build(&doc)?, "PDF")
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    let (bytes, kind) = match ext.as_str() {
+        "pptx" => (pptx::build(&doc)?, "PPTX"),
+        "gif" => (gif::build(&doc)?, "GIF"),
+        _ => (pdf::build(&doc)?, "PDF"),
     };
     std::fs::write(&output, &bytes)
         .map_err(|e| format!("écriture du fichier impossible : {e}"))?;

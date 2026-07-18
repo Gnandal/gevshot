@@ -14,6 +14,7 @@ pub const EXTENSION: &str = "gevd";
 const VERSION: u32 = 1;
 
 /// Une étape du guide : la capture, ses annotations, et le texte associé.
+#[derive(Clone)]
 pub struct Step {
     pub image: image::RgbaImage,
     pub annotations: Vec<Annotation>,
@@ -24,6 +25,7 @@ pub struct Step {
 }
 
 /// Un document complet : un titre et une suite ordonnée d'étapes.
+#[derive(Clone)]
 pub struct Document {
     pub title: String,
     pub steps: Vec<Step>,

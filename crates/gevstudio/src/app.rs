@@ -10,12 +10,13 @@ use gev_core::document::{self, Document, Step};
 use gev_core::fonts::FontSet;
 use gev_core::{project, render};
 
-use crate::{pdf, pptx, theme};
+use crate::{gif, pdf, pptx, theme};
 
 #[derive(Clone, Copy)]
 enum ExportFormat {
     Pdf,
     Pptx,
+    Gif,
 }
 
 impl ExportFormat {
@@ -23,12 +24,14 @@ impl ExportFormat {
         match self {
             ExportFormat::Pdf => "pdf",
             ExportFormat::Pptx => "pptx",
+            ExportFormat::Gif => "gif",
         }
     }
     fn label(self) -> &'static str {
         match self {
             ExportFormat::Pdf => "PDF",
             ExportFormat::Pptx => "PPTX",
+            ExportFormat::Gif => "GIF animé",
         }
     }
 }
@@ -157,6 +160,7 @@ impl GevstudioApp {
         let built = match format {
             ExportFormat::Pdf => pdf::build(&self.doc),
             ExportFormat::Pptx => pptx::build(&self.doc),
+            ExportFormat::Gif => gif::build(&self.doc),
         };
         match built.and_then(|bytes| {
             std::fs::write(&path, &bytes).map_err(|e| format!("écriture impossible : {e}"))
@@ -293,6 +297,9 @@ impl GevstudioApp {
             }
             if ui.button("Exporter PPTX…").clicked() {
                 self.export(ExportFormat::Pptx);
+            }
+            if ui.button("Exporter GIF…").clicked() {
+                self.export(ExportFormat::Gif);
             }
             ui.separator();
             ui.label("Titre :");
