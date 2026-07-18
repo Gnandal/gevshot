@@ -405,21 +405,29 @@ impl GevstudioApp {
         thumb: Option<&egui::TextureHandle>,
     ) {
         let selected = i == self.selected;
-        // Liste façon macOS : surbrillance bleutée pleine, sans bordure.
-        let fill = if selected {
-            theme::ACCENT_SOFT
-        } else {
-            egui::Color32::TRANSPARENT
-        };
-        let frame = egui::Frame::default()
-            .fill(fill)
-            .corner_radius(egui::CornerRadius::same(8))
+        // Direction B : l'étape sélectionnée porte une fine bordure accent
+        // (seul emploi du bleu) ; les autres n'ont pas de bordure.
+        let mut frame = egui::Frame::default()
+            .corner_radius(egui::CornerRadius::same(10))
             .inner_margin(egui::Margin::same(8));
+        if selected {
+            frame = frame
+                .fill(theme::WHITE)
+                .stroke(egui::Stroke::new(1.0, theme::ACCENT));
+        }
 
         let resp = frame
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    ui.label(theme::meta(&(i + 1).to_string()));
+                    // Numéro d'étape : accent quand sélectionné.
+                    let num = if selected {
+                        theme::medium((i + 1).to_string())
+                            .size(11.0)
+                            .color(theme::ACCENT)
+                    } else {
+                        theme::meta(&(i + 1).to_string())
+                    };
+                    ui.label(num);
                     // Vignette.
                     if let Some(tex) = thumb {
                         let sized = egui::load::SizedTexture::from_handle(tex);
@@ -515,7 +523,6 @@ impl GevstudioApp {
             .fill(theme::CANVAS)
             .stroke(egui::Stroke::new(1.0, theme::HAIRLINE))
             .corner_radius(egui::CornerRadius::same(12))
-            .shadow(theme::card_shadow())
             .inner_margin(egui::Margin::same(14))
             .show(ui, |ui| {
                 let avail = ui.available_size();
@@ -701,7 +708,7 @@ impl eframe::App for GevstudioApp {
             .default_size(268.0)
             .frame(
                 egui::Frame::default()
-                    .fill(theme::SUBTLE)
+                    .fill(theme::WHITE)
                     .stroke(egui::Stroke::new(1.0, theme::HAIRLINE))
                     .inner_margin(egui::Margin::symmetric(12, 4)),
             )
