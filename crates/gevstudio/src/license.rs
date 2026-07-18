@@ -16,6 +16,11 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 
+/// Mode « tout gratuit » : tant qu'il vaut `true`, toutes les fonctions Pro
+/// sont débloquées pour tout le monde (aucun filigrane, aucun verrou). Le
+/// code de licence reste en place ; passer à `false` réactive la vente.
+pub const FREE_MODE: bool = true;
+
 /// Clé publique de vérification (la clé privée correspondante émet les
 /// licences hors ligne — voir `examples/license_tool.rs`).
 const PUBLIC_KEY: [u8; 32] = [
@@ -43,7 +48,7 @@ impl License {
     }
 
     pub fn is_pro(&self) -> bool {
-        self.licensee.is_some()
+        FREE_MODE || self.licensee.is_some()
     }
 
     /// Nom du licencié (pour affichage « Sous licence de … »).

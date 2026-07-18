@@ -562,15 +562,21 @@ impl GevstudioApp {
             ui.colored_label(theme::SUCCESS, "●");
             ui.label(theme::medium(&self.status).size(12.0).color(theme::MUTED));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let tier = if let Some(name) = self.license.licensee() {
-                    theme::semibold(format!("GEVSTUDIO Pro · {name}"))
-                        .size(12.0)
-                        .color(theme::INK)
-                } else {
-                    theme::medium("Version gratuite").size(12.0).color(theme::MUTED)
-                };
-                if ui.add(egui::Label::new(tier).sense(egui::Sense::click())).clicked() && !self.is_pro() {
-                    self.show_pro = true;
+                if let Some(name) = self.license.licensee() {
+                    ui.label(
+                        theme::semibold(format!("GEVSTUDIO Pro · {name}"))
+                            .size(12.0)
+                            .color(theme::INK),
+                    );
+                } else if !crate::license::FREE_MODE {
+                    // Upsell seulement quand la vente est active.
+                    let tier = theme::medium("Version gratuite").size(12.0).color(theme::MUTED);
+                    if ui
+                        .add(egui::Label::new(tier).sense(egui::Sense::click()))
+                        .clicked()
+                    {
+                        self.show_pro = true;
+                    }
                 }
             });
         });
