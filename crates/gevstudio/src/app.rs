@@ -405,16 +405,15 @@ impl GevstudioApp {
         thumb: Option<&egui::TextureHandle>,
     ) {
         let selected = i == self.selected;
-        let fill = if selected { theme::SUBTLE } else { theme::WHITE };
-        let stroke = if selected {
-            egui::Stroke::new(1.0, theme::ACCENT)
+        // Liste façon macOS : surbrillance bleutée pleine, sans bordure.
+        let fill = if selected {
+            theme::ACCENT_SOFT
         } else {
-            egui::Stroke::new(1.0, theme::HAIRLINE)
+            egui::Color32::TRANSPARENT
         };
         let frame = egui::Frame::default()
             .fill(fill)
-            .stroke(stroke)
-            .corner_radius(egui::CornerRadius::same(10))
+            .corner_radius(egui::CornerRadius::same(8))
             .inner_margin(egui::Margin::same(8));
 
         let resp = frame
@@ -516,6 +515,7 @@ impl GevstudioApp {
             .fill(theme::CANVAS)
             .stroke(egui::Stroke::new(1.0, theme::HAIRLINE))
             .corner_radius(egui::CornerRadius::same(12))
+            .shadow(theme::card_shadow())
             .inner_margin(egui::Margin::same(14))
             .show(ui, |ui| {
                 let avail = ui.available_size();
@@ -701,7 +701,7 @@ impl eframe::App for GevstudioApp {
             .default_size(268.0)
             .frame(
                 egui::Frame::default()
-                    .fill(theme::WHITE)
+                    .fill(theme::SUBTLE)
                     .stroke(egui::Stroke::new(1.0, theme::HAIRLINE))
                     .inner_margin(egui::Margin::symmetric(12, 4)),
             )

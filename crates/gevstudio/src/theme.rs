@@ -1,24 +1,35 @@
-//! Thème « Direction B — Minimaliste & sobre » : neutres chauds + un seul
-//! accent bleu réservé à la sélection et au focus (jamais décoratif). Le noir
-//! encre porte les actions. Typo Inter.
+//! Thème « esprit macOS » : chrome gris clair (barre latérale/outils) sur
+//! contenu blanc, bleu système pour la sélection et les actions par défaut,
+//! coins arrondis généreux, ombres douces, espacements aérés. Typo Inter
+//! (substitut de SF).
 
 use eframe::egui::{self, Color32, FontFamily, RichText};
 
-// ----- Palette ---------------------------------------------------------------
+// ----- Palette (macOS light) -------------------------------------------------
 
-pub const WHITE: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF); // surfaces
-pub const SUBTLE: Color32 = Color32::from_rgb(0xFA, 0xFA, 0xF9); // fond doux
-pub const SURFACE_2: Color32 = Color32::from_rgb(0xF5, 0xF5, 0xF4); // survol
-pub const HAIRLINE: Color32 = Color32::from_rgb(0xE7, 0xE5, 0xE4); // bordures
-pub const MUTED: Color32 = Color32::from_rgb(0x79, 0x71, 0x6C); // texte secondaire
-pub const INK: Color32 = Color32::from_rgb(0x1C, 0x19, 0x17); // texte + actions
-pub const ACCENT: Color32 = Color32::from_rgb(0x25, 0x63, 0xEB); // sélection / focus
-pub const ACCENT_SOFT: Color32 = Color32::from_rgb(0xDB, 0xEA, 0xFE);
-pub const DANGER: Color32 = Color32::from_rgb(0xB4, 0x23, 0x18);
-pub const SUCCESS: Color32 = Color32::from_rgb(0x1E, 0x9A, 0x4E);
+pub const WHITE: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF); // contenu
+pub const SUBTLE: Color32 = Color32::from_rgb(0xF5, 0xF5, 0xF7); // chrome gris
+pub const SURFACE_2: Color32 = Color32::from_rgb(0xEA, 0xEA, 0xEF); // survol
+pub const HAIRLINE: Color32 = Color32::from_rgb(0xE3, 0xE3, 0xE6); // séparateurs
+pub const MUTED: Color32 = Color32::from_rgb(0x86, 0x86, 0x8B); // libellé secondaire
+pub const INK: Color32 = Color32::from_rgb(0x1D, 0x1D, 0x1F); // libellé principal
+pub const ACCENT: Color32 = Color32::from_rgb(0x00, 0x7A, 0xFF); // bleu système
+pub const ACCENT_SOFT: Color32 = Color32::from_rgb(0xE4, 0xF0, 0xFF); // surbrillance
+pub const DANGER: Color32 = Color32::from_rgb(0xFF, 0x3B, 0x30); // rouge système
+pub const SUCCESS: Color32 = Color32::from_rgb(0x34, 0xC7, 0x59); // vert système
 
 /// Fond de la zone d'aperçu.
 pub const CANVAS: Color32 = SUBTLE;
+
+/// Ombre douce façon carte macOS.
+pub fn card_shadow() -> egui::epaint::Shadow {
+    egui::epaint::Shadow {
+        offset: [0, 2],
+        blur: 12,
+        spread: 0,
+        color: Color32::from_black_alpha(24),
+    }
+}
 
 const SEMIBOLD: &str = "inter-semibold";
 const MEDIUM: &str = "inter-medium";
@@ -88,7 +99,7 @@ pub fn apply(ctx: &egui::Context) {
         v.selection.stroke = egui::Stroke::new(1.0, ACCENT);
         v.hyperlink_color = ACCENT;
 
-        let radius = egui::CornerRadius::same(10);
+        let radius = egui::CornerRadius::same(8);
         for w in [
             &mut v.widgets.noninteractive,
             &mut v.widgets.inactive,
@@ -102,7 +113,7 @@ pub fn apply(ctx: &egui::Context) {
         v.widgets.noninteractive.fg_stroke.color = INK;
         v.widgets.noninteractive.bg_stroke.color = HAIRLINE;
 
-        // Boutons/champs « secondaires » : surface claire, bordure fine.
+        // Boutons/champs « secondaires » : surface claire, bordure discrète.
         v.widgets.inactive.bg_fill = WHITE;
         v.widgets.inactive.weak_bg_fill = WHITE;
         v.widgets.inactive.fg_stroke.color = INK;
@@ -117,25 +128,29 @@ pub fn apply(ctx: &egui::Context) {
         v.widgets.active.weak_bg_fill = SURFACE_2;
         v.widgets.active.fg_stroke.color = INK;
         v.widgets.active.bg_stroke = egui::Stroke::new(1.0, ACCENT);
-
-        // Focus : liseré accent (seul emploi décoratif toléré du bleu).
         v.widgets.hovered.expansion = 0.0;
         v.widgets.active.expansion = 0.0;
 
-        style.spacing.item_spacing = egui::vec2(8.0, 8.0);
-        style.spacing.button_padding = egui::vec2(14.0, 8.0);
+        // Fenêtres (modales) : coins arrondis + ombre douce macOS.
+        v.window_corner_radius = egui::CornerRadius::same(14);
+        v.window_shadow = card_shadow();
+        v.popup_shadow = card_shadow();
+
+        // Espacements aérés.
+        style.spacing.item_spacing = egui::vec2(10.0, 10.0);
+        style.spacing.button_padding = egui::vec2(16.0, 8.0);
         style.spacing.window_margin = egui::Margin::same(0);
     });
 }
 
 // ----- Boutons ---------------------------------------------------------------
 
-/// Bouton primaire : encre pleine, texte blanc (action forte).
+/// Bouton primaire (bouton par défaut macOS) : bleu système, texte blanc.
 pub fn primary_button(ui: &mut egui::Ui, text: &str) -> egui::Response {
     ui.add(
         egui::Button::new(medium(text).color(WHITE))
-            .fill(INK)
-            .corner_radius(egui::CornerRadius::same(10)),
+            .fill(ACCENT)
+            .corner_radius(egui::CornerRadius::same(8)),
     )
 }
 

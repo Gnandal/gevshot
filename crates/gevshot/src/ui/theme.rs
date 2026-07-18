@@ -1,17 +1,18 @@
 use eframe::egui::{self, Color32};
 
-// Palette « Direction B — Minimaliste & sobre » : neutres chauds + un seul
-// accent bleu réservé à la sélection et au focus. Partagée avec GEVSTUDIO.
+// Thème « esprit macOS » : chrome gris clair / contenu blanc, bleu système
+// pour la sélection et les actions, coins arrondis et ombres douces. Partagé
+// avec GEVSTUDIO.
 pub const BG_TOOLBAR: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF); // surfaces
-pub const BG_CANVAS: Color32 = Color32::from_rgb(0xFA, 0xFA, 0xF9); // zone d'édition
-pub const BG_HOVER: Color32 = Color32::from_rgb(0xF5, 0xF5, 0xF4);
-pub const ACCENT: Color32 = Color32::from_rgb(0x25, 0x63, 0xEB);
-pub const ACCENT_SOFT: Color32 = Color32::from_rgb(0xDB, 0xEA, 0xFE);
-pub const TEXT: Color32 = Color32::from_rgb(0x1C, 0x19, 0x17);
-pub const TEXT_WEAK: Color32 = Color32::from_rgb(0x79, 0x71, 0x6C);
-pub const BORDER: Color32 = Color32::from_rgb(0xE7, 0xE5, 0xE4);
-pub const SUCCESS: Color32 = Color32::from_rgb(0x1E, 0x9A, 0x4E);
-pub const DANGER: Color32 = Color32::from_rgb(0xB4, 0x23, 0x18);
+pub const BG_CANVAS: Color32 = Color32::from_rgb(0xF5, 0xF5, 0xF7); // zone d'édition
+pub const BG_HOVER: Color32 = Color32::from_rgb(0xEA, 0xEA, 0xEF);
+pub const ACCENT: Color32 = Color32::from_rgb(0x00, 0x7A, 0xFF); // bleu système
+pub const ACCENT_SOFT: Color32 = Color32::from_rgb(0xE4, 0xF0, 0xFF);
+pub const TEXT: Color32 = Color32::from_rgb(0x1D, 0x1D, 0x1F);
+pub const TEXT_WEAK: Color32 = Color32::from_rgb(0x86, 0x86, 0x8B);
+pub const BORDER: Color32 = Color32::from_rgb(0xE3, 0xE3, 0xE6);
+pub const SUCCESS: Color32 = Color32::from_rgb(0x34, 0xC7, 0x59);
+pub const DANGER: Color32 = Color32::from_rgb(0xFF, 0x3B, 0x30);
 
 // Pilule d'aide affichée pendant la sélection de région (overlay sombre sur la
 // capture plein écran — inchangé, indépendant du thème clair de l'app).
@@ -76,7 +77,18 @@ pub fn apply(ctx: &egui::Context) {
         v.widgets.active.fg_stroke.color = TEXT;
         v.widgets.active.bg_stroke = egui::Stroke::new(1.0, ACCENT);
 
-        style.spacing.item_spacing = egui::vec2(8.0, 6.0);
-        style.spacing.button_padding = egui::vec2(12.0, 6.0);
+        // Fenêtres (modales) : coins arrondis + ombre douce macOS.
+        v.window_corner_radius = egui::CornerRadius::same(14);
+        let shadow = egui::epaint::Shadow {
+            offset: [0, 2],
+            blur: 12,
+            spread: 0,
+            color: Color32::from_black_alpha(24),
+        };
+        v.window_shadow = shadow;
+        v.popup_shadow = shadow;
+
+        style.spacing.item_spacing = egui::vec2(9.0, 7.0);
+        style.spacing.button_padding = egui::vec2(14.0, 7.0);
     });
 }
