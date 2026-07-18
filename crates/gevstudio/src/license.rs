@@ -1,55 +1,66 @@
 //! Licence GEVSTUDIO : version gratuite par défaut, déblocage « Pro » via une
-//! clé à paiement unique. Validation hors-ligne (format + checksum) et
-//! persistance dans le dossier de configuration de l'utilisateur.
+//! clé à paiement unique.
 //!
-//! Format de clé : `GEVS-XXXX-XXXX-XXXX` — préfixe `GEVS` puis 12 caractères
-//! d'un alphabet sans ambiguïté ; le dernier caractère est un checksum des 11
-//! précédents. Ce n'est pas un verrou cryptographique (déblocage local), mais
-//! ça évite qu'une chaîne quelconque active la version Pro.
+//! Les licences sont **signées Ed25519**. La clé privée reste chez le vendeur
+//! (elle sert à émettre les licences avec `examples/license_tool.rs`) ; seule
+//! la clé publique est embarquée ici. Forger une licence valide exige la clé
+//! privée — un simple format ne suffit plus.
+//!
+//! Format d'une licence : `base64url(nom) "." base64url(signature)`. La
+//! signature couvre le nom du licencié, ce qui rend chaque licence nominative
+//! et infalsifiable sans la clé privée.
 
 use std::path::PathBuf;
 
-/// Alphabet Crockford (sans I, L, O, U, 0, 1) — 32 symboles.
-const ALPHABET: &[u8; 32] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const PREFIX: &str = "GEVS";
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+
+/// Clé publique de vérification (la clé privée correspondante émet les
+/// licences hors ligne — voir `examples/license_tool.rs`).
+const PUBLIC_KEY: [u8; 32] = [
+    248, 171, 163, 85, 190, 183, 142, 220, 37, 244, 129, 223, 80, 123, 41, 136, 93, 110, 121, 232,
+    217, 230, 167, 251, 220, 181, 108, 243, 114, 199, 172, 247,
+];
 
 #[derive(Default)]
 pub struct License {
-    key: Option<String>,
+    licensee: Option<String>,
 }
 
 impl License {
     /// Charge l'état de licence depuis le disque (gratuit si absent/invalide).
     pub fn load() -> License {
         match config_path().and_then(|p| std::fs::read_to_string(p).ok()) {
-            Some(content) => {
-                let key = content.trim().to_string();
-                if is_valid_key(&key) {
-                    License { key: Some(key) }
-                } else {
-                    License::default()
-                }
-            }
+            Some(content) => match verify(content.trim()) {
+                Ok(name) => License {
+                    licensee: Some(name),
+                },
+                Err(_) => License::default(),
+            },
             None => License::default(),
         }
     }
 
     pub fn is_pro(&self) -> bool {
-        self.key.is_some()
+        self.licensee.is_some()
     }
 
-    /// Tente d'activer une clé. En cas de succès, la persiste.
+    /// Nom du licencié (pour affichage « Sous licence de … »).
+    pub fn licensee(&self) -> Option<&str> {
+        self.licensee.as_deref()
+    }
+
+    /// Tente d'activer une licence. En cas de succès, la persiste.
     pub fn activate(&mut self, input: &str) -> Result<(), String> {
-        let key = normalize(input);
-        if !is_valid_key(&key) {
-            return Err("Clé de licence invalide.".into());
-        }
+        let license = input.trim();
+        let name = verify(license)?;
         let path = config_path().ok_or("Dossier de configuration introuvable.")?;
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir).map_err(|e| format!("Écriture impossible : {e}"))?;
         }
-        std::fs::write(&path, &key).map_err(|e| format!("Écriture impossible : {e}"))?;
-        self.key = Some(key);
+        std::fs::write(&path, license).map_err(|e| format!("Écriture impossible : {e}"))?;
+        self.licensee = Some(name);
         Ok(())
     }
 }
@@ -58,72 +69,78 @@ fn config_path() -> Option<PathBuf> {
     dirs::config_dir().map(|d| d.join("GEVSTUDIO").join("license.key"))
 }
 
-/// Normalise une saisie : majuscules, sans espaces ni tirets superflus, avec
-/// des tirets tous les 4 caractères (GEVS-XXXX-XXXX-XXXX).
-fn normalize(input: &str) -> String {
-    let raw: String = input
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .map(|c| c.to_ascii_uppercase())
-        .collect();
-    raw.as_bytes()
-        .chunks(4)
-        .map(|c| std::str::from_utf8(c).unwrap_or(""))
-        .collect::<Vec<_>>()
-        .join("-")
+/// Vérifie une licence avec la clé publique embarquée et renvoie le nom du
+/// licencié si la signature est authentique.
+fn verify(license: &str) -> Result<String, String> {
+    let vk = VerifyingKey::from_bytes(&PUBLIC_KEY).map_err(|_| "Clé interne invalide.".to_string())?;
+    verify_with(&vk, license)
 }
 
-fn is_valid_key(key: &str) -> bool {
-    let compact: String = key.chars().filter(|c| *c != '-').collect();
-    let Some(payload) = compact.strip_prefix(PREFIX) else {
-        return false;
-    };
-    if payload.len() != 12 || !payload.bytes().all(|b| ALPHABET.contains(&b)) {
-        return false;
-    }
-    let bytes = payload.as_bytes();
-    checksum(&bytes[..11]) == bytes[11]
-}
-
-/// Caractère de contrôle = ALPHABET[(somme des valeurs) % 32].
-fn checksum(payload: &[u8]) -> u8 {
-    let sum: usize = payload
-        .iter()
-        .map(|b| ALPHABET.iter().position(|a| a == b).unwrap_or(0))
-        .sum();
-    ALPHABET[sum % 32]
+fn verify_with(vk: &VerifyingKey, license: &str) -> Result<String, String> {
+    let (payload_b64, sig_b64) = license
+        .split_once('.')
+        .ok_or("Format de licence invalide.")?;
+    let payload = B64
+        .decode(payload_b64.trim())
+        .map_err(|_| "Licence illisible.")?;
+    let sig_bytes: [u8; 64] = B64
+        .decode(sig_b64.trim())
+        .map_err(|_| "Licence illisible.")?
+        .try_into()
+        .map_err(|_| "Signature de taille invalide.")?;
+    let signature = Signature::from_bytes(&sig_bytes);
+    vk.verify(&payload, &signature)
+        .map_err(|_| "Licence non authentique.")?;
+    String::from_utf8(payload).map_err(|_| "Licence corrompue.".to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ed25519_dalek::{Signer, SigningKey};
 
-    /// Fabrique une clé valide à partir de 11 caractères de charge utile.
-    fn make_key(payload11: &str) -> String {
-        let bytes = payload11.as_bytes();
-        assert_eq!(bytes.len(), 11);
-        let check = checksum(bytes) as char;
-        normalize(&format!("{PREFIX}{payload11}{check}"))
+    /// Fabrique une licence signée par `sk` pour `name`.
+    fn issue(sk: &SigningKey, name: &str) -> String {
+        let sig = sk.sign(name.as_bytes());
+        format!(
+            "{}.{}",
+            B64.encode(name.as_bytes()),
+            B64.encode(sig.to_bytes())
+        )
     }
 
     #[test]
-    fn valid_key_round_trips() {
-        let key = make_key("7K2P9QX4A2B");
-        assert!(is_valid_key(&key), "clé générée : {key}");
+    fn accepts_a_genuine_license() {
+        let sk = SigningKey::generate(&mut rand::rngs::OsRng);
+        let vk = sk.verifying_key();
+        let license = issue(&sk, "Jean Dupont");
+        assert_eq!(verify_with(&vk, &license).unwrap(), "Jean Dupont");
+    }
+
+    #[test]
+    fn rejects_wrong_key() {
+        // Signée par une autre clé que celle attendue.
+        let attacker = SigningKey::generate(&mut rand::rngs::OsRng);
+        let expected = SigningKey::generate(&mut rand::rngs::OsRng).verifying_key();
+        let license = issue(&attacker, "Pirate");
+        assert!(verify_with(&expected, &license).is_err());
+    }
+
+    #[test]
+    fn rejects_tampered_name() {
+        let sk = SigningKey::generate(&mut rand::rngs::OsRng);
+        let vk = sk.verifying_key();
+        let license = issue(&sk, "Client A");
+        // Remplace le nom sans re-signer.
+        let (_, sig) = license.split_once('.').unwrap();
+        let forged = format!("{}.{}", B64.encode(b"Client B"), sig);
+        assert!(verify_with(&vk, &forged).is_err());
     }
 
     #[test]
     fn rejects_garbage() {
-        assert!(!is_valid_key("hello"));
-        assert!(!is_valid_key("GEVS-0000-0000-0000")); // 0 hors alphabet
-        // Bon format mais mauvais checksum.
-        assert!(!is_valid_key("GEVS-AAAA-AAAA-AAAB"));
-    }
-
-    #[test]
-    fn activation_normalizes_input() {
-        let key = make_key("MNPQRSTVWXY");
-        let compact = key.replace('-', "").to_lowercase();
-        assert!(is_valid_key(&normalize(&compact)));
+        let vk = SigningKey::generate(&mut rand::rngs::OsRng).verifying_key();
+        assert!(verify_with(&vk, "pas-une-licence").is_err());
+        assert!(verify_with(&vk, "abc.def").is_err());
     }
 }

@@ -562,8 +562,10 @@ impl GevstudioApp {
             ui.colored_label(theme::SUCCESS, "●");
             ui.label(theme::medium(&self.status).size(12.0).color(theme::MUTED));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let tier = if self.is_pro() {
-                    theme::semibold("GEVSTUDIO Pro").size(12.0).color(theme::INK)
+                let tier = if let Some(name) = self.license.licensee() {
+                    theme::semibold(format!("GEVSTUDIO Pro · {name}"))
+                        .size(12.0)
+                        .color(theme::INK)
                 } else {
                     theme::medium("Version gratuite").size(12.0).color(theme::MUTED)
                 };
@@ -638,7 +640,7 @@ impl GevstudioApp {
                 ui.horizontal(|ui| {
                     ui.add(
                         egui::TextEdit::singleline(&mut self.key_input)
-                            .hint_text("GEVS-XXXX-XXXX-XXXX")
+                            .hint_text("Collez votre licence…")
                             .desired_width(260.0),
                     );
                     if theme::primary_button(ui, "Activer").clicked() {
