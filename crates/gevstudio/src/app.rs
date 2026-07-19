@@ -8,7 +8,6 @@ use std::process::ExitCode;
 use eframe::egui::{self, FontFamily, FontId};
 use gev_core::document::{self, Document, Step};
 use gev_core::fonts::FontSet;
-use gev_core::model::{Annotation, Shape, CanvasTransform};
 use gev_core::{project, render};
 
 use crate::license::License;
@@ -16,33 +15,6 @@ use crate::{gif, pdf, pptx, theme};
 
 const BUY_URL: &str = "https://gevstudio.app/pro";
 const PRICE: &str = "39 €";
-
-#[derive(Clone, Copy, PartialEq)]
-enum AnnotationTool {
-    Badge,
-    Arrow,
-    Rect,
-    Ellipse,
-    Text,
-}
-
-impl AnnotationTool {
-    fn label(&self) -> &'static str {
-        match self {
-            AnnotationTool::Badge => "Pastille",
-            AnnotationTool::Arrow => "Flèche",
-            AnnotationTool::Rect => "Rectangle",
-            AnnotationTool::Ellipse => "Ellipse",
-            AnnotationTool::Text => "Texte",
-        }
-    }
-}
-
-#[derive(Clone, Copy, PartialEq)]
-enum DrawingState {
-    Idle,
-    Drawing { start: egui::Pos2 },
-}
 
 #[derive(Clone, Copy, PartialEq)]
 enum ExportFormat {
@@ -114,12 +86,6 @@ struct GevstudioApp {
     show_pro: bool,
     key_input: String,
     key_msg: Option<Result<String, String>>,
-    // Annotations.
-    annotation_tool: Option<AnnotationTool>,
-    drawing_state: DrawingState,
-    annotation_color: egui::Color32,
-    annotation_stroke: f32,
-    selected_annotation: Option<usize>,
 }
 
 impl GevstudioApp {
@@ -141,11 +107,6 @@ impl GevstudioApp {
             show_pro: false,
             key_input: String::new(),
             key_msg: None,
-            annotation_tool: None,
-            drawing_state: DrawingState::Idle,
-            annotation_color: theme::DANGER,
-            annotation_stroke: 2.0,
-            selected_annotation: None,
         };
         if let Some(p) = open {
             app.open_path(&p);
@@ -511,69 +472,6 @@ impl GevstudioApp {
         ui.add_space(6.0);
     }
 
-    fn annotation_toolbar(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal(|ui| {
-            ui.label(theme::meta("Outils"));
-            ui.separator();
-
-            // Tool selection
-            for tool in &[
-                AnnotationTool::Badge,
-                AnnotationTool::Arrow,
-                AnnotationTool::Rect,
-                AnnotationTool::Ellipse,
-                AnnotationTool::Text,
-            ] {
-                let is_selected = self.annotation_tool == Some(*tool);
-                let btn = if is_selected {
-                    egui::Button::new(theme::medium(tool.label()).color(theme::WHITE))
-                        .fill(theme::INK)
-                } else {
-                    egui::Button::new(theme::medium(tool.label()))
-                };
-                if ui.add(btn).clicked() {
-                    self.annotation_tool = if is_selected { None } else { Some(*tool) };
-                }
-            }
-
-            ui.separator();
-
-            // Color picker
-            let mut color = [
-                self.annotation_color.r() as f32 / 255.0,
-                self.annotation_color.g() as f32 / 255.0,
-                self.annotation_color.b() as f32 / 255.0,
-            ];
-            ui.label(theme::meta("Couleur"));
-            ui.color_edit_button_rgb(&mut color);
-            self.annotation_color = egui::Color32::from_rgb(
-                (color[0] * 255.0) as u8,
-                (color[1] * 255.0) as u8,
-                (color[2] * 255.0) as u8,
-            );
-
-            // Stroke width
-            ui.label(theme::meta("Épaisseur"));
-            ui.add(
-                egui::Slider::new(&mut self.annotation_stroke, 0.5..=10.0)
-                    .show_value(true),
-            );
-
-            // Delete selected annotation
-            if let Some(step) = self.doc.steps.get_mut(self.selected) {
-                if let Some(idx) = self.selected_annotation {
-                    if idx < step.annotations.len() {
-                        if theme::danger_button(ui, "Supprimer").clicked() {
-                            step.annotations.remove(idx);
-                            self.selected_annotation = None;
-                            self.invalidate();
-                        }
-                    }
-                }
-            }
-        });
-    }
-
     fn central(&mut self, ui: &mut egui::Ui) {
         if self.doc.steps.is_empty() {
             self.empty_state(ui);
@@ -604,10 +502,6 @@ impl GevstudioApp {
         }
         ui.add_space(8.0);
 
-        // Annotation toolbar.
-        self.annotation_toolbar(ui);
-        ui.add_space(8.0);
-
         // Légende ancrée en bas ; l'aperçu occupe le reste.
         egui::Panel::bottom(egui::Id::new("caption"))
             .frame(egui::Frame::default().inner_margin(egui::Margin::symmetric(0, 8)))
@@ -624,7 +518,7 @@ impl GevstudioApp {
                 }
             });
 
-        // Aperçu avec interaction de dessin.
+        // Aperçu.
         egui::Frame::default()
             .fill(theme::CANVAS)
             .stroke(egui::Stroke::new(1.0, theme::HAIRLINE))
@@ -635,105 +529,14 @@ impl GevstudioApp {
                 ui.centered_and_justified(|ui| {
                     if let Some(tex) = &self.preview {
                         let sized = egui::load::SizedTexture::from_handle(tex);
-                        let img_response = ui.add(
+                        ui.add(
                             egui::Image::new(sized)
                                 .max_size(avail)
-                                .maintain_aspect_ratio(true)
-                                .sense(egui::Sense::click_and_drag()),
+                                .maintain_aspect_ratio(true),
                         );
-                        self.handle_canvas_interaction(&img_response);
                     }
                 });
             });
-    }
-
-    fn handle_canvas_interaction(&mut self, img_response: &egui::Response) {
-        if self.annotation_tool.is_none() {
-            return;
-        }
-
-        if img_response.drag_started() {
-            if let Some(pos) = img_response.interact_pointer_pos() {
-                self.drawing_state = DrawingState::Drawing { start: pos };
-            }
-        }
-
-        if img_response.drag_stopped() {
-            if let DrawingState::Drawing { start } = self.drawing_state {
-                if let Some(end) = img_response.interact_pointer_pos() {
-                    self.finish_drawing(start, end);
-                }
-            }
-            self.drawing_state = DrawingState::Idle;
-        }
-    }
-
-    fn finish_drawing(&mut self, start: egui::Pos2, end: egui::Pos2) {
-        let Some(step) = self.doc.steps.get_mut(self.selected) else {
-            return;
-        };
-        let Some(tex) = &self.preview else { return };
-        let Some(tool) = self.annotation_tool else { return };
-
-        // Get image dimensions for coordinate transformation
-        let img_width = step.image.width() as f32;
-        let img_height = step.image.height() as f32;
-
-        // Transform screen coordinates to image coordinates
-        let scale = (tex.size()[0] as f32).min(tex.size()[1] as f32) / img_width.max(img_height);
-        let transform = gev_core::model::CanvasTransform {
-            origin: start,
-            scale,
-        };
-
-        let shape = match tool {
-            AnnotationTool::Badge => {
-                Shape::Badge {
-                    center: transform.to_image(start),
-                    number: (step.annotations.len() + 1) as u32,
-                    label: String::new(),
-                    bordered: true,
-                }
-            }
-            AnnotationTool::Arrow => {
-                Shape::Arrow {
-                    from: transform.to_image(start),
-                    to: transform.to_image(end),
-                }
-            }
-            AnnotationTool::Rect => {
-                let p1 = transform.to_image(start);
-                let p2 = transform.to_image(end);
-                Shape::Rect {
-                    rect: egui::Rect::from_two_pos(p1, p2),
-                }
-            }
-            AnnotationTool::Ellipse => {
-                let p1 = transform.to_image(start);
-                let p2 = transform.to_image(end);
-                Shape::Ellipse {
-                    rect: egui::Rect::from_two_pos(p1, p2),
-                }
-            }
-            AnnotationTool::Text => {
-                Shape::Text {
-                    pos: transform.to_image(start),
-                    text: "Texte".to_string(),
-                    size: 16.0,
-                    font: gev_core::model::FontChoice::Sans,
-                    bold: false,
-                }
-            }
-        };
-
-        let annotation = Annotation {
-            shape,
-            color: self.annotation_color,
-            stroke_width: self.annotation_stroke,
-        };
-
-        step.annotations.push(annotation);
-        self.invalidate();
     }
 
     fn empty_state(&mut self, ui: &mut egui::Ui) {
