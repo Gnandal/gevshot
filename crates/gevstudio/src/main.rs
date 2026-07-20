@@ -103,6 +103,10 @@ fn build(args: &[String]) -> Result<(), String> {
             pro_only("GIF")?;
             (infra::export::build_gif(&doc)?, "GIF")
         }
+        "mp4" => {
+            pro_only("MP4")?;
+            (infra::export::build_mp4(&doc)?, "MP4")
+        }
         _ => (infra::export::build_pdf(&doc, !pro)?, "PDF"),
     };
     std::fs::write(&output, &bytes)
