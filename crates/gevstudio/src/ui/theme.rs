@@ -36,9 +36,9 @@ pub fn install_fonts(ctx: &egui::Context) {
             std::sync::Arc::new(egui::FontData::from_static(bytes)),
         );
     };
-    add("inter", include_bytes!("../assets/fonts/Inter-Regular.ttf"));
-    add(MEDIUM, include_bytes!("../assets/fonts/Inter-Medium.ttf"));
-    add(SEMIBOLD, include_bytes!("../assets/fonts/Inter-SemiBold.ttf"));
+    add("inter", include_bytes!("../../assets/fonts/Inter-Regular.ttf"));
+    add(MEDIUM, include_bytes!("../../assets/fonts/Inter-Medium.ttf"));
+    add(SEMIBOLD, include_bytes!("../../assets/fonts/Inter-SemiBold.ttf"));
 
     // Inter devient la police proportionnelle par défaut (avant les polices de
     // repli, pour conserver un rendu cohérent sur les caractères manquants).

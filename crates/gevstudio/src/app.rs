@@ -11,7 +11,7 @@ use gev_core::fonts::FontSet;
 use gev_core::{project, render};
 
 use crate::license::License;
-use crate::{gif, pdf, pptx, theme};
+use crate::{infra::export, ui::theme};
 
 const BUY_URL: &str = "https://gevstudio.app/pro";
 const PRICE: &str = "39 €";
@@ -188,9 +188,9 @@ impl GevstudioApp {
             return;
         };
         let built = match format {
-            ExportFormat::Pdf => pdf::build(&self.doc, !self.is_pro()),
-            ExportFormat::Pptx => pptx::build(&self.doc),
-            ExportFormat::Gif => gif::build(&self.doc),
+            ExportFormat::Pdf => export::build_pdf(&self.doc, !self.is_pro()),
+            ExportFormat::Pptx => export::build_pptx(&self.doc),
+            ExportFormat::Gif => export::build_gif(&self.doc),
         };
         match built.and_then(|bytes| {
             std::fs::write(&path, &bytes).map_err(|e| format!("écriture impossible : {e}"))

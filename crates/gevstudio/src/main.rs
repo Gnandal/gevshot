@@ -12,11 +12,10 @@ use std::process::ExitCode;
 use gev_core::document;
 
 mod app;
-mod gif;
+mod domain;
+mod infra;
 mod license;
-mod pdf;
-mod pptx;
-mod theme;
+mod ui;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -97,13 +96,13 @@ fn build(args: &[String]) -> Result<(), String> {
     let (bytes, kind) = match ext.as_str() {
         "pptx" => {
             pro_only("PPTX")?;
-            (pptx::build(&doc)?, "PPTX")
+            (infra::export::build_pptx(&doc)?, "PPTX")
         }
         "gif" => {
             pro_only("GIF")?;
-            (gif::build(&doc)?, "GIF")
+            (infra::export::build_gif(&doc)?, "GIF")
         }
-        _ => (pdf::build(&doc, !pro)?, "PDF"),
+        _ => (infra::export::build_pdf(&doc, !pro)?, "PDF"),
     };
     std::fs::write(&output, &bytes)
         .map_err(|e| format!("écriture du fichier impossible : {e}"))?;
