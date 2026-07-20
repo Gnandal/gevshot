@@ -35,9 +35,9 @@ Boucle cible : capturer → annoter → exporter, en moins de 30 secondes.
    - Undo/Redo (Ctrl+Z / Ctrl+Y).
 4. Export :
    - `Ctrl+C` → image annotée dans le presse-papiers ;
-   - bouton « Sauver » → PNG auto-nommé dans le dossier configuré ;
+   - bouton « Exporter » → PNG auto-nommé dans le dossier configuré ;
    - « Enregistrer sous… » → dialogue classique ;
-   - « Sauver le projet » → fichier `.gev` (JSON : image source en base64/PNG + liste des annotations) ré-ouvrable pour régénérer la capture quand le logiciel documenté évolue.
+   - « Exporter le projet » → fichier `.gev` (JSON : image source en base64/PNG + liste des annotations) ré-ouvrable pour régénérer la capture quand le logiciel documenté évolue.
 
 ## Architecture
 

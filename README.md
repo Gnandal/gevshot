@@ -34,7 +34,7 @@ Capture → annote → exporte, en moins de 30 secondes.
 |---|---|
 | `Ctrl+Shift+S` | Capturer (global, même appli masquée) |
 | `Ctrl+C` | Copier l'image annotée |
-| `Ctrl+S` | Sauver en PNG auto-nommé |
+| `Ctrl+S` | Exporter en PNG auto-nommé |
 | `Ctrl+Z` / `Ctrl+Y` | Annuler / Rétablir |
 | `Suppr` | Supprimer l'annotation sélectionnée |
 | `Échap` (sélection) | Annuler la capture |

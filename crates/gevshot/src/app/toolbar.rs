@@ -133,12 +133,12 @@ impl GevshotApp {
                     ui.close();
                     self.copy_to_clipboard();
                 }
-                if ui.button("Sauver (Ctrl+S)").clicked() {
+                if ui.button("Exporter (Ctrl+S)").clicked() {
                     ui.close();
                     self.save_auto(ctx);
                 }
                 ui.separator();
-                if ui.button("Sauver le projet…").clicked() {
+                if ui.button("Exporter le projet…").clicked() {
                     ui.close();
                     self.save_project();
                 }
@@ -200,7 +200,7 @@ impl GevshotApp {
     }
 
     /// Boutons d'action, posés de droite à gauche : ⚙, légende, IA,
-    /// Projet, Sauver, Copier.
+    /// Projet, Exporter, Copier.
     fn action_buttons_ui(&mut self, ctx: &egui::Context, ui: &mut egui::Ui, editing: bool) {
         ui.add_space(4.0);
         if widgets::icon_button(ui, false, widgets::icon_gear)
@@ -254,7 +254,7 @@ impl GevshotApp {
                 self.open_project(ctx);
             }
             if ui
-                .add_enabled(editing, egui::Button::new("Sauver le projet…"))
+                .add_enabled(editing, egui::Button::new("Exporter le projet…"))
                 .clicked()
             {
                 ui.close();
@@ -274,7 +274,7 @@ impl GevshotApp {
             }
         });
         if editing {
-            if widgets::pill_button(ui, "Sauver", true)
+            if widgets::pill_button(ui, "Exporter", true)
                 .on_hover_text(format!("Ctrl+S — PNG dans {}", self.save_dir().display()))
                 .clicked()
             {

@@ -158,7 +158,7 @@ fn save(ui: &mut egui::Ui, s: &mut Settings) {
     ui.add_space(16.0);
     ui.checkbox(
         &mut s.copy_on_save,
-        "Copier aussi dans le presse-papiers après « Sauver »",
+        "Copier aussi dans le presse-papiers après « Exporter »",
     );
 }
 
@@ -215,7 +215,7 @@ fn shortcuts(ui: &mut egui::Ui) {
             for (action, keys) in [
                 ("Capturer (global)", "Ctrl+Shift+S"),
                 ("Copier l'image annotée", "Ctrl+C"),
-                ("Sauver en PNG", "Ctrl+S"),
+                ("Exporter en PNG", "Ctrl+S"),
                 ("Annuler / Rétablir", "Ctrl+Z / Ctrl+Y"),
                 ("Supprimer la sélection", "Suppr"),
                 ("Tout l'écran (pendant la sélection)", "Entrée"),

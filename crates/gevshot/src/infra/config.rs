@@ -14,7 +14,7 @@ pub struct Settings {
     pub capture_delay_ms: u64,
     /// Dossier de sauvegarde automatique (None = Images\Gevshot).
     pub save_dir: Option<PathBuf>,
-    /// Copier aussi dans le presse-papiers après « Sauver ».
+    /// Copier aussi dans le presse-papiers après « Exporter ».
     pub copy_on_save: bool,
     /// Clé API Anthropic (fonctions IA). Stockée en clair dans config.json.
     pub api_key: String,
