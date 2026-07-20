@@ -19,6 +19,11 @@ image = { workspace = true, features = ["gif"] }
 printpdf = { version = "0.11.2", features = ["png"] }
 rfd = "0.17.2"
 zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+# Nouvelles dépendances pour narration/vidéo
+# rodio est optionnel car il dépend de système audio; dans ce remote env on simule
+ureq = { version = "2", features = ["json"] }
+# ffmpeg-sidecar pour l'export vidéo (sera utilisé en v1+)
+# ffmpeg-sidecar = "2.5"
 
 [dev-dependencies]
 emath.workspace = true
