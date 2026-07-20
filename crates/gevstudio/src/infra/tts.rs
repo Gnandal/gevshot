@@ -4,7 +4,7 @@
 
 use std::sync::mpsc::Sender;
 
-use gev_core::document::{NarrationAudio, AudioFormat};
+use gev_core::document::NarrationAudio;
 
 pub enum TtsResult {
     Audio(NarrationAudio),

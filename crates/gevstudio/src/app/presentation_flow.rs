@@ -6,7 +6,7 @@
 //! - Lecture audio synchronisée si narration présente
 //! - Pas de fi ligrane Pro (gratuit pour vitrine)
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use gev_core::document::Document;
 use gev_core::fonts::FontSet;

@@ -6,7 +6,7 @@
 use std::io::Cursor;
 
 use ecolor::Color32;
-use gev_core::document::{Document, Step, Transition};
+use gev_core::document::{Document, Step};
 use gev_core::fonts::FontSet;
 use gev_core::model::FontChoice;
 use gev_core::render;

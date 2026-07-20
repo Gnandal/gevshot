@@ -8,7 +8,7 @@
 
 use std::io::{Cursor, Write};
 
-use gev_core::document::{Document, Step, Transition};
+use gev_core::document::{Document, Step};
 use gev_core::fonts::FontSet;
 use gev_core::render;
 use zip::write::SimpleFileOptions;

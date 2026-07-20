@@ -3,7 +3,7 @@
 //! Texte et annotations partagent les fontes DejaVu embarquées → rendu
 //! identique sur toute machine.
 
-use gev_core::document::{Document, Step, Transition};
+use gev_core::document::{Document, Step};
 use gev_core::fonts::FontSet;
 use gev_core::model::FontChoice;
 use gev_core::render;
