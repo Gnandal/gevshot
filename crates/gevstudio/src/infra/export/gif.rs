@@ -99,7 +99,7 @@ fn fit(img_w: u32, img_h: u32, box_w: u32, box_h: u32) -> (u32, u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gev_core::document::Document;
+    use gev_core::document::{Document, Transition};
 
     #[test]
     fn build_produces_animated_gif() {

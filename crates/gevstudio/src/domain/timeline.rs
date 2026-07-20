@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn duration_override_has_priority() {
-        let mut step = Step {
+        let step = Step {
             image: image::RgbaImage::new(100, 100),
             annotations: Vec::new(),
             title: String::new(),

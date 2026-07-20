@@ -225,6 +225,7 @@ fn gray() -> Color {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use gev_core::document::Transition;
     use gev_core::model::{Annotation, Shape};
 
     fn sample_step(title: &str, caption: &str) -> Step {

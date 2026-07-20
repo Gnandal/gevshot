@@ -386,7 +386,7 @@ const THEME: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gev_core::document::Document;
+    use gev_core::document::{Document, Transition};
     use gev_core::model::{Annotation, Shape};
 
     #[test]
