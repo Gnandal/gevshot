@@ -12,6 +12,7 @@ use std::process::ExitCode;
 use gev_core::document;
 
 mod app;
+mod app_impl;
 mod domain;
 mod infra;
 mod license;
@@ -28,8 +29,8 @@ fn main() -> ExitCode {
         }
         // Sans argument (ou un chemin) : interface graphique. Un `.gevd`
         // passé en argument est ouvert au démarrage.
-        None => app::launch(None),
-        Some(_) => app::launch(Some(PathBuf::from(&args[0]))),
+        None => app_impl::launch(None),
+        Some(_) => app_impl::launch(Some(PathBuf::from(&args[0]))),
     }
 }
 
