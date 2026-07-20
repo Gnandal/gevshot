@@ -1,10 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! GEVSTUDIO — assemble des captures annotées `.gevd` en documents.
+//! GEVSTUDIO — assemble des captures annotées `.gevd` en documents multi-format.
 //!
 //! Deux modes :
-//! - sans argument : lance l'interface (timeline des étapes, aperçu, export) ;
-//! - `build <doc.gevd> [-o <sortie.pdf>]` : génère un PDF en ligne de commande.
+//! - sans argument : lance l'interface (timeline, aperçu, présentation, export) ;
+//! - `build <doc.gevd> [-o <sortie>]` : génère PDF/PPTX/GIF/MP4 en ligne de commande
+//!   (format déterminé par l'extension, MP4 et PPTX réservés à la version Pro).
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -44,7 +45,7 @@ fn cli(result: Result<(), String>) -> ExitCode {
     }
 }
 
-const USAGE: &str = "Usage :\n  gevstudio                        lance l'interface\n  gevstudio <doc.gevd>             ouvre un document dans l'interface\n  gevstudio build <doc.gevd> [-o <sortie.pdf>]   génère un PDF sans interface";
+const USAGE: &str = "Usage :\n  gevstudio                             lance l'interface\n  gevstudio <doc.gevd>                  ouvre un document dans l'interface\n  gevstudio build <doc.gevd> [-o <out>] génère PDF/PPTX/GIF/MP4 (format par extension)";
 
 struct BuildArgs {
     input: PathBuf,
@@ -102,6 +103,10 @@ fn build(args: &[String]) -> Result<(), String> {
         "gif" => {
             pro_only("GIF")?;
             (infra::export::build_gif(&doc)?, "GIF")
+        }
+        "mp4" => {
+            pro_only("MP4")?;
+            (infra::export::build_mp4(&doc)?, "MP4")
         }
         _ => (infra::export::build_pdf(&doc, !pro)?, "PDF"),
     };
