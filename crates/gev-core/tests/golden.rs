@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-use gev_core::document::{self, Document, Step};
+use gev_core::document::{self, Document, Step, Transition};
 use gev_core::fonts::FontSet;
 use gev_core::{project, render};
 
@@ -88,14 +88,23 @@ fn gevdoc_round_trip() {
                 annotations: annotations.clone(),
                 title: "Étape 1".into(),
                 caption: "Première capture annotée.".into(),
+                narration: String::new(),
+                narration_audio: None,
+                duration_override_ms: None,
+                transition: Transition::Cut,
             },
             Step {
                 image: image.clone(),
                 annotations: annotations.clone(),
                 title: String::new(),
                 caption: String::new(),
+                narration: String::new(),
+                narration_audio: None,
+                duration_override_ms: None,
+                transition: Transition::Cut,
             },
         ],
+        voice_id: String::new(),
     };
 
     let tmp = std::env::temp_dir().join("gev_core_doc_roundtrip.gevd");

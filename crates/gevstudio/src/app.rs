@@ -94,6 +94,7 @@ impl GevstudioApp {
             doc: Document {
                 title: String::new(),
                 steps: Vec::new(),
+                voice_id: String::new(),
             },
             path: None,
             selected: 0,
@@ -213,6 +214,10 @@ impl GevstudioApp {
                     annotations: Vec::new(),
                     title: String::new(),
                     caption: String::new(),
+                    narration: String::new(),
+                    narration_audio: None,
+                    duration_override_ms: None,
+                    transition: document::Transition::Cut,
                 });
                 self.status = "Étape ajoutée".into();
             }
@@ -234,6 +239,10 @@ impl GevstudioApp {
                     annotations,
                     title: String::new(),
                     caption: String::new(),
+                    narration: String::new(),
+                    narration_audio: None,
+                    duration_override_ms: None,
+                    transition: document::Transition::Cut,
                 });
                 self.status = "Étape ajoutée".into();
             }

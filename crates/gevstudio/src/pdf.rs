@@ -3,7 +3,7 @@
 //! Texte et annotations partagent les fontes DejaVu embarquées → rendu
 //! identique sur toute machine.
 
-use gev_core::document::{Document, Step};
+use gev_core::document::{Document, Step, Transition};
 use gev_core::fonts::FontSet;
 use gev_core::model::FontChoice;
 use gev_core::render;
@@ -244,6 +244,10 @@ mod tests {
             annotations,
             title: title.into(),
             caption: caption.into(),
+            narration: String::new(),
+            narration_audio: None,
+            duration_override_ms: None,
+            transition: Transition::Cut,
         }
     }
 
@@ -255,6 +259,7 @@ mod tests {
                 sample_step("Étape 1", "Une légende accentuée."),
                 sample_step("", ""),
             ],
+            voice_id: String::new(),
         };
         let bytes = build(&doc, true).expect("génération PDF");
         assert!(bytes.starts_with(b"%PDF"), "en-tête PDF manquant");

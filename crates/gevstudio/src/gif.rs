@@ -6,7 +6,7 @@
 use std::io::Cursor;
 
 use ecolor::Color32;
-use gev_core::document::{Document, Step};
+use gev_core::document::{Document, Step, Transition};
 use gev_core::fonts::FontSet;
 use gev_core::model::FontChoice;
 use gev_core::render;
@@ -112,10 +112,15 @@ mod tests {
             annotations: Vec::new(),
             title: "Étape 1".into(),
             caption: "Ligne un\nLigne deux".into(),
+            narration: String::new(),
+            narration_audio: None,
+            duration_override_ms: None,
+            transition: Transition::Cut,
         };
         let doc = Document {
             title: "Guide".into(),
             steps: vec![step.clone(), step],
+            voice_id: String::new(),
         };
         let bytes = build(&doc).expect("génération GIF");
         // En-tête GIF89a.

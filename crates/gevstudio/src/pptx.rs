@@ -8,7 +8,7 @@
 
 use std::io::{Cursor, Write};
 
-use gev_core::document::{Document, Step};
+use gev_core::document::{Document, Step, Transition};
 use gev_core::fonts::FontSet;
 use gev_core::render;
 use zip::write::SimpleFileOptions;
@@ -406,10 +406,15 @@ mod tests {
             }],
             title: "Étape <1> & « test »".into(),
             caption: "Légende".into(),
+            narration: String::new(),
+            narration_audio: None,
+            duration_override_ms: None,
+            transition: Transition::Cut,
         };
         let doc = Document {
             title: "Guide".into(),
             steps: vec![step],
+            voice_id: String::new(),
         };
         let bytes = build(&doc).expect("génération PPTX");
         // En-tête ZIP local (PK\x03\x04).
