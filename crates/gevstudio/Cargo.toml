@@ -1,0 +1,22 @@
+[package]
+name = "gevstudio"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# embedded-fonts : rendu d'export déterministe (DejaVu), indépendant des
+# polices installées sur la machine.
+gev-core = { workspace = true, features = ["embedded-fonts"] }
+gev-ui.workspace = true
+base64.workspace = true
+dirs = "6.0.0"
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+eframe.workspace = true
+image.workspace = true
+rfd = "0.17.2"
+serde.workspace = true
+serde_json.workspace = true
+tiny-skia.workspace = true
+
+[dev-dependencies]
+rand = "0.8"

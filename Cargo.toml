@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/gev-core", "crates/gev-ui", "crates/gevshot"]
+members = ["crates/gev-core", "crates/gev-ui", "crates/gevshot", "crates/gevstudio"]
 
 [workspace.package]
 version = "1.0.2"
@@ -20,6 +20,9 @@ tiny-skia = "0.12"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 base64 = "0.22.1"
+ed25519-dalek = { version = "2.2.0", features = ["rand_core"] }
+dirs = "6.0.0"
+rfd = "0.17.2"
 
 [profile.release]
 lto = true
