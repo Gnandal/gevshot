@@ -69,7 +69,7 @@ impl GevshotApp {
             self.settings.ai_model.clone(),
             capture.image.clone(),
             self.ai_prompt.trim().to_string(),
-            self.editor.ai_style(),
+            ai::style_from_editor(&self.editor),
             tx,
         );
         self.ai_rx = Some(rx);

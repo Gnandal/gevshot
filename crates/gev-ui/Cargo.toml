@@ -1,0 +1,8 @@
+[package]
+name = "gev-ui"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+gev-core.workspace = true
+eframe.workspace = true

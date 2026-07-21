@@ -4,6 +4,7 @@
 use eframe::egui;
 
 use super::{CaptureMode, GevshotApp, Stage};
+use crate::domain::editor::Tool;
 use crate::ui::widgets;
 
 impl GevshotApp {
@@ -138,7 +139,7 @@ impl GevshotApp {
                     self.save_auto(ctx);
                 }
                 ui.separator();
-                if ui.button("Exporter le projet…").clicked() {
+                if ui.button("Enregistrer le projet…").clicked() {
                     ui.close();
                     self.save_project();
                 }
@@ -254,7 +255,7 @@ impl GevshotApp {
                 self.open_project(ctx);
             }
             if ui
-                .add_enabled(editing, egui::Button::new("Exporter le projet…"))
+                .add_enabled(editing, egui::Button::new("Enregistrer le projet…"))
                 .clicked()
             {
                 ui.close();
@@ -289,22 +290,36 @@ impl GevshotApp {
         }
     }
 
-    /// Raccourcis clavier de l'édition (Ctrl+C, Ctrl+S).
+    /// Raccourcis clavier de l'édition (Ctrl+C, Ctrl+S, S/P/F/R/E/T/C pour les outils).
     pub(super) fn shortcuts(&mut self, ctx: &egui::Context) {
         if !matches!(self.stage, Stage::Editing { .. }) || ctx.egui_wants_keyboard_input() {
             return;
         }
-        let (copy, save) = ctx.input(|i| {
-            (
-                i.modifiers.ctrl && i.key_pressed(egui::Key::C),
-                i.modifiers.ctrl && i.key_pressed(egui::Key::S),
-            )
+        ctx.input(|i| {
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::C) {
+                self.copy_to_clipboard();
+            }
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::S) {
+                self.save_auto(ctx);
+            }
+            // Raccourcis outils (sans modificateurs)
+            if !i.modifiers.any() {
+                if i.key_pressed(egui::Key::S) {
+                    self.editor.set_tool(Tool::Select);
+                } else if i.key_pressed(egui::Key::P) {
+                    self.editor.set_tool(Tool::Badge);
+                } else if i.key_pressed(egui::Key::F) {
+                    self.editor.set_tool(Tool::Arrow);
+                } else if i.key_pressed(egui::Key::R) {
+                    self.editor.set_tool(Tool::Rect);
+                } else if i.key_pressed(egui::Key::E) {
+                    self.editor.set_tool(Tool::Ellipse);
+                } else if i.key_pressed(egui::Key::T) {
+                    self.editor.set_tool(Tool::Text);
+                } else if i.key_pressed(egui::Key::C) {
+                    self.editor.set_tool(Tool::Crop);
+                }
+            }
         });
-        if copy {
-            self.copy_to_clipboard();
-        }
-        if save {
-            self.save_auto(ctx);
-        }
     }
 }

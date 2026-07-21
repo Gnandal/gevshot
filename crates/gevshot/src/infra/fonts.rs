@@ -1,5 +1,5 @@
-//! Enregistrement des polices système dans egui (éditeur) et jeu de
-//! polices d'export partagé. La résolution des fichiers vit dans
+//! Enregistrement des polices dans egui : Inter (partagée, gev-ui) et
+//! familles d'annotation système. Le jeu de polices d'export vit dans
 //! `gev_core::fonts`.
 
 use std::sync::OnceLock;
@@ -13,37 +13,7 @@ use gev_core::model::FontChoice;
 /// proportionnelle par défaut.
 pub fn install(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
-
-    // Police d'interface : Inter (Direction B), partagée avec GEVSTUDIO.
-    for (name, bytes) in [
-        ("inter", &include_bytes!("../../assets/fonts/Inter-Regular.ttf")[..]),
-        (
-            "inter-medium",
-            &include_bytes!("../../assets/fonts/Inter-Medium.ttf")[..],
-        ),
-        (
-            "inter-semibold",
-            &include_bytes!("../../assets/fonts/Inter-SemiBold.ttf")[..],
-        ),
-    ] {
-        fonts.font_data.insert(
-            name.to_string(),
-            std::sync::Arc::new(egui::FontData::from_static(bytes)),
-        );
-    }
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(0, "inter".to_string());
-    fonts.families.insert(
-        egui::FontFamily::Name("inter-semibold".into()),
-        vec!["inter-semibold".to_string()],
-    );
-    fonts.families.insert(
-        egui::FontFamily::Name("inter-medium".into()),
-        vec!["inter-medium".to_string()],
-    );
+    gev_ui::fonts::add_inter(&mut fonts);
 
     let default_family = fonts
         .families

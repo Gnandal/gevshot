@@ -1433,6 +1433,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gev-ui"
+version = "1.0.2"
+dependencies = [
+ "eframe",
+ "gev-core",
+]
+
+[[package]]
 name = "gevshot"
 version = "1.0.2"
 dependencies = [
@@ -1442,6 +1450,7 @@ dependencies = [
  "dirs",
  "eframe",
  "gev-core",
+ "gev-ui",
  "global-hotkey",
  "image",
  "rfd",

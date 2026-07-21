@@ -119,5 +119,6 @@ impl GevshotApp {
         }
         self.doc_name = crate::infra::export::next_auto_name(&self.save_dir());
         self.update_title(ctx);
+        self.copy_to_clipboard();
     }
 }

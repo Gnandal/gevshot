@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/gev-core", "crates/gevshot"]
+members = ["crates/gev-core", "crates/gev-ui", "crates/gevshot"]
 
 [workspace.package]
 version = "1.0.2"
@@ -8,6 +8,8 @@ edition = "2024"
 
 [workspace.dependencies]
 gev-core = { path = "crates/gev-core" }
+gev-ui = { path = "crates/gev-ui" }
+eframe = { version = "0.35.0", default-features = false, features = ["glow", "default_fonts", "x11", "wayland"] }
 # emath/ecolor : mêmes types que ceux ré-exportés par egui — à maintenir
 # sur la même version mineure qu'eframe.
 emath = "0.35"

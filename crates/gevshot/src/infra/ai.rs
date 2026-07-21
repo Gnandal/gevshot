@@ -36,6 +36,18 @@ pub struct AiStyle {
     pub badge_border: bool,
 }
 
+/// Capture le style courant de l'éditeur partagé.
+pub fn style_from_editor(editor: &crate::domain::editor::Editor) -> AiStyle {
+    AiStyle {
+        color: editor.color(),
+        stroke_width: editor.stroke_width(),
+        text_size: editor.text_size(),
+        font: editor.text_font(),
+        bold: editor.text_bold(),
+        badge_border: editor.badge_border(),
+    }
+}
+
 /// Redimensionne si nécessaire, encode en PNG base64.
 /// Retourne (base64, facteur image envoyée → image originale, largeur, hauteur).
 fn prepare_image(img: &image::RgbaImage) -> Result<(String, f32, u32, u32), String> {
