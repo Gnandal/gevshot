@@ -7,7 +7,10 @@ Capture → annote → exporte, en moins de 30 secondes.
 ## Fonctionnalités
 
 - **Capture de région** : `Ctrl+Shift+S` (raccourci global) fige l'écran, on trace
-  la zone à la souris. `Entrée` = tout l'écran, `Échap` = annuler.
+  la zone à la souris. `Entrée` = tout l'écran, `Échap` = annuler. Une barre en
+  haut de l'overlay permet de changer de mode sans annuler : région, fenêtre
+  au choix, écran entier, région différée (3 s). L'image est copiée dans le
+  presse-papiers dès la capture.
 - **Annotations vectorielles** (éditables : déplacer, supprimer, annuler) :
   - ① pastilles numérotées auto-incrémentées (renumérotation automatique à la suppression)
   - ↗ flèches
@@ -19,7 +22,8 @@ Capture → annote → exporte, en moins de 30 secondes.
   annotations suivent l'image, celles hors zone sont supprimées et les
   pastilles renumérotées.
 - **Export** :
-  - `Ctrl+C` → presse-papiers
+  - copie automatique dans le presse-papiers après chaque capture ; `Ctrl+C`
+    pour recopier avec les annotations à jour
   - `Ctrl+S` → PNG auto-nommé `capture-AAAA-MM-JJ-NNN.png` dans `Images\Gevshot`
   - « Enregistrer sous… » classique
 - **Format projet `.gev`** : image + annotations rouvrables. Quand le logiciel

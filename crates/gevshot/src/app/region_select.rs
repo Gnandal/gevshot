@@ -1,10 +1,20 @@
-//! Sélection de région sur l'écran gelé : voile, rectangle, pilule d'aide,
+//! Sélection de région sur l'écran gelé : voile, rectangle, barre de modes,
 //! validation ou annulation.
 
 use eframe::egui;
 
-use super::{Capture, GevshotApp, Stage};
+use super::{Capture, CaptureMode, GevshotApp, Stage};
 use crate::ui::theme;
+
+/// Action choisie dans la barre de modes pendant la sélection.
+enum ModeAction {
+    /// Quitter l'overlay et ouvrir le sélecteur de fenêtre.
+    PickWindow,
+    /// Relancer une capture de région après 3 secondes.
+    RegionIn3s,
+    /// Annuler la capture (équivalent Échap).
+    Cancel,
+}
 
 impl GevshotApp {
     pub(super) fn region_select_ui(&mut self, ctx: &egui::Context, root: &mut egui::Ui) {
@@ -24,6 +34,7 @@ impl GevshotApp {
         }
 
         let mut committed: Option<Option<egui::Rect>> = None;
+        let mut mode_action: Option<ModeAction> = None;
         egui::CentralPanel::default()
             .frame(egui::Frame::NONE)
             .show(root, |ui| {
@@ -97,7 +108,7 @@ impl GevshotApp {
                     }
                 }
 
-                draw_hint_pill(painter, rect);
+                mode_bar(ui.ctx(), &mut committed, &mut mode_action);
 
                 if response.drag_stopped()
                     && let Some((a, b)) = self.selection.take()
@@ -117,6 +128,25 @@ impl GevshotApp {
                 response.on_hover_cursor(egui::CursorIcon::Crosshair);
             });
 
+        if let Some(action) = mode_action {
+            // `cancel_selection` remet `keep_annotations` à false : on le
+            // préserve pour que « Recapturer le fond » survive au changement
+            // de mode.
+            let keep = self.keep_annotations;
+            self.cancel_selection(ctx);
+            match action {
+                ModeAction::PickWindow => {
+                    self.keep_annotations = keep;
+                    self.open_window_picker();
+                }
+                ModeAction::RegionIn3s => {
+                    self.keep_annotations = keep;
+                    self.start_capture_mode(ctx, CaptureMode::Region, 3000);
+                }
+                ModeAction::Cancel => {}
+            }
+            return;
+        }
         if let Some(region) = committed {
             self.commit_region(ctx, region);
         }
@@ -158,78 +188,133 @@ impl GevshotApp {
         self.selection = None;
         self.doc_name = crate::infra::export::next_auto_name(&self.save_dir());
         self.update_title(ctx);
+        self.copy_to_clipboard();
         restore_window(ctx);
     }
 }
 
-/// Pilule d'aide sombre, centrée en haut de l'écran pendant la sélection.
-fn draw_hint_pill(painter: &egui::Painter, screen: egui::Rect) {
-    use egui::{CornerRadius, FontId, Rect, Shape, Stroke, pos2, vec2};
+/// Barre de modes sombre, centrée en haut de l'écran pendant la sélection :
+/// propose les différents modes de capture sans quitter l'overlay.
+fn mode_bar(
+    ctx: &egui::Context,
+    committed: &mut Option<Option<egui::Rect>>,
+    action: &mut Option<ModeAction>,
+) {
+    egui::Area::new(egui::Id::new("capture_mode_bar"))
+        .anchor(egui::Align2::CENTER_TOP, egui::vec2(0.0, 21.0))
+        .order(egui::Order::Foreground)
+        .show(ctx, |ui| {
+            egui::Frame::new()
+                .fill(theme::PILL_BG)
+                .corner_radius(egui::CornerRadius::same(23))
+                .inner_margin(egui::Margin::symmetric(12, 8))
+                .show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = 6.0;
+                        mode_chip(ui, "Région", true)
+                            .on_hover_text("Tracez un rectangle sur l'écran gelé");
+                        if mode_chip(ui, "Fenêtre…", false)
+                            .on_hover_text("Choisir une fenêtre à capturer")
+                            .clicked()
+                        {
+                            *action = Some(ModeAction::PickWindow);
+                        }
+                        if mode_chip(ui, "Écran entier", false)
+                            .on_hover_text("Capturer tout l'écran (Entrée)")
+                            .clicked()
+                        {
+                            *committed = Some(None);
+                        }
+                        if mode_chip(ui, "Dans 3 s", false)
+                            .on_hover_text("Région après un délai de 3 secondes")
+                            .clicked()
+                        {
+                            *action = Some(ModeAction::RegionIn3s);
+                        }
+                        bar_separator(ui);
+                        bar_text(ui, "Tracez un rectangle pour capturer");
+                        bar_separator(ui);
+                        if key_chip(ui, "Échap").on_hover_text("Annuler").clicked() {
+                            *action = Some(ModeAction::Cancel);
+                        }
+                    });
+                });
+        });
+}
 
-    let galley = painter.layout_no_wrap(
-        "Tracez un rectangle pour capturer une région".to_string(),
-        FontId::proportional(15.0),
-        egui::Color32::WHITE,
-    );
-    let key_galley = painter.layout_no_wrap(
-        "Échap".to_string(),
-        FontId::proportional(13.0),
+/// Pastille de mode : pleine (accent) si active, sinon translucide au survol.
+fn mode_chip(ui: &mut egui::Ui, label: &str, active: bool) -> egui::Response {
+    let font = egui::FontId::proportional(14.0);
+    let galley = ui
+        .painter()
+        .layout_no_wrap(label.to_string(), font.clone(), egui::Color32::WHITE);
+    let size = galley.size() + egui::vec2(24.0, 12.0);
+    let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+    let fill = if active {
+        theme::ACCENT
+    } else if resp.hovered() {
+        egui::Color32::from_white_alpha(26)
+    } else {
+        egui::Color32::TRANSPARENT
+    };
+    let text_color = if active {
+        egui::Color32::WHITE
+    } else {
+        theme::PILL_KEY_TEXT
+    };
+    ui.painter()
+        .rect_filled(rect, egui::CornerRadius::same(15), fill);
+    let galley = ui.painter().layout_no_wrap(label.to_string(), font, text_color);
+    ui.painter()
+        .galley(rect.center() - galley.size() / 2.0, galley, text_color);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// Badge de touche clavier (bordure fine), cliquable.
+fn key_chip(ui: &mut egui::Ui, label: &str) -> egui::Response {
+    let galley = ui.painter().layout_no_wrap(
+        label.to_string(),
+        egui::FontId::proportional(13.0),
         theme::PILL_KEY_TEXT,
     );
-
-    let (pad, gap, icon_w, h) = (18.0, 12.0, 18.0, 46.0);
-    let key_w = key_galley.size().x + 16.0;
-    let w = pad + icon_w + gap + galley.size().x + gap + key_w + pad;
-    let rect = Rect::from_center_size(pos2(screen.center().x, screen.min.y + 44.0), vec2(w, h));
-    painter.rect_filled(rect, CornerRadius::same(23), theme::PILL_BG);
-
-    // Icône : carré en pointillés avec une petite flèche vers le coin.
-    let stroke = Stroke::new(1.5, theme::PILL_ICON);
-    let ic = Rect::from_center_size(
-        pos2(rect.min.x + pad + icon_w / 2.0, rect.center().y),
-        vec2(15.0, 15.0),
+    let size = galley.size() + egui::vec2(16.0, 10.0);
+    let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+    ui.painter().rect_stroke(
+        rect,
+        egui::CornerRadius::same(7),
+        egui::Stroke::new(1.0, theme::PILL_KEY_BORDER),
+        egui::StrokeKind::Middle,
     );
-    let corners = [
-        ic.left_top(),
-        ic.right_top(),
-        ic.right_bottom(),
-        ic.left_bottom(),
-        ic.left_top(),
-    ];
-    for s in Shape::dashed_line(&corners, stroke, 2.6, 2.2) {
-        painter.add(s);
-    }
-    let tip = ic.center() + vec2(-2.0, -2.0);
-    painter.line_segment([ic.center() + vec2(3.5, 3.5), tip], stroke);
-    painter.line_segment([tip, tip + vec2(3.5, 0.0)], stroke);
-    painter.line_segment([tip, tip + vec2(0.0, 3.5)], stroke);
+    ui.painter().galley(
+        rect.center() - galley.size() / 2.0,
+        galley,
+        theme::PILL_KEY_TEXT,
+    );
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
 
-    // Texte.
-    painter.galley(
-        pos2(
-            rect.min.x + pad + icon_w + gap,
-            rect.center().y - galley.size().y / 2.0,
-        ),
+/// Texte d'aide non interactif dans la barre.
+fn bar_text(ui: &mut egui::Ui, label: &str) {
+    let galley = ui.painter().layout_no_wrap(
+        label.to_string(),
+        egui::FontId::proportional(14.0),
+        egui::Color32::WHITE,
+    );
+    let size = galley.size() + egui::vec2(8.0, 12.0);
+    let (rect, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+    ui.painter().galley(
+        rect.center() - galley.size() / 2.0,
         galley,
         egui::Color32::WHITE,
     );
+}
 
-    // Touche Échap.
-    let key_rect = Rect::from_min_size(
-        pos2(rect.max.x - pad - key_w, rect.center().y - 13.0),
-        vec2(key_w, 26.0),
-    );
-    painter.rect_stroke(
-        key_rect,
-        CornerRadius::same(7),
-        Stroke::new(1.0, theme::PILL_KEY_BORDER),
-        egui::StrokeKind::Middle,
-    );
-    let key_size = key_galley.size();
-    painter.galley(
-        key_rect.center() - key_size / 2.0,
-        key_galley,
-        theme::PILL_KEY_TEXT,
+/// Séparateur vertical fin.
+fn bar_separator(ui: &mut egui::Ui) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(1.0, 22.0), egui::Sense::hover());
+    ui.painter().line_segment(
+        [rect.center_top(), rect.center_bottom()],
+        egui::Stroke::new(1.0, theme::PILL_KEY_BORDER),
     );
 }
 

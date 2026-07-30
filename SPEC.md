@@ -21,7 +21,10 @@ Boucle cible : capturer → annoter → exporter, en moins de 30 secondes.
 2. `Ctrl+Shift+S` (ou clic sur l'icône → « Capturer ») déclenche la capture :
    - capture de l'écran complet en mémoire ;
    - overlay plein écran assombri, l'utilisateur trace un rectangle ;
-   - la zone sélectionnée devient l'image de travail.
+   - une barre de modes en haut de l'overlay permet de basculer sans annuler :
+     fenêtre au choix, écran entier, région différée (3 s) ;
+   - la zone sélectionnée devient l'image de travail, copiée d'emblée dans
+     le presse-papiers.
 3. L'éditeur s'ouvre avec l'image et la barre d'outils :
    - **Sélection** : cliquer une annotation pour la déplacer/supprimer (Suppr).
    - **Pastille numérotée** : clic → cercle numéroté auto-incrémenté ; renumérotation automatique en cas de suppression.
@@ -34,7 +37,8 @@ Boucle cible : capturer → annoter → exporter, en moins de 30 secondes.
    - Couleur (rouge par défaut) + épaisseur du trait.
    - Undo/Redo (Ctrl+Z / Ctrl+Y).
 4. Export :
-   - `Ctrl+C` → image annotée dans le presse-papiers ;
+   - `Ctrl+C` → image annotée dans le presse-papiers (copie aussi automatique
+     dès la capture) ;
    - bouton « Exporter » → PNG auto-nommé dans le dossier configuré ;
    - « Enregistrer sous… » → dialogue classique ;
    - « Exporter le projet » → fichier `.gev` (JSON : image source en base64/PNG + liste des annotations) ré-ouvrable pour régénérer la capture quand le logiciel documenté évolue.
