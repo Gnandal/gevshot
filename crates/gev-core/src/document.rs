@@ -27,16 +27,11 @@ pub enum AudioFormat {
     Mp3,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub enum Transition {
+    #[default]
     Cut,
     Fade,
-}
-
-impl Default for Transition {
-    fn default() -> Self {
-        Transition::Cut
-    }
 }
 
 /// Une étape du guide : la capture, ses annotations, et le texte associé.
